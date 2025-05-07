@@ -1,3 +1,26 @@
+# Python build, packaging, and environment artifacts
+####################################################
+build/
+dist/
+*.egg-info/
+*.py[cod] # For .pyc, .pyo (already have __pycache__)
+
+# Compiled C/Cython outputs (general patterns, specific ones are in build/)
+# Note: render.so in utils/asset/ is handled by package_data, but other .so files
+# generated during development outside the build dir should be ignored.
+# If you have specific .so files you *want* to track, list them with !pattern.
+*.so
+*.pyd # Python C extensions on Windows
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+####################################################
+# Existing ignores below
+####################################################
 .DS_Store
 **/.DS_Store
 
