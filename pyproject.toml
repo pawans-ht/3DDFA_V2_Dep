@@ -1,0 +1,21 @@
+[project]
+name = "3ddfa-v2-dep"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "argparse>=1.4.0",
+    "cython>=3.0.12",
+    "gradio>=5.29.0",
+    "imageio>=2.37.0",
+    "imageio-ffmpeg>=0.6.0",
+    "matplotlib>=3.10.1",
+    "numpy>=2.2.5",
+    "onnxruntime>=1.21.1",
+    "opencv-python>=4.11.0.86",
+    "pyyaml>=6.0.2",
+    "scikit-image>=0.25.2",
+    "scipy>=1.15.2",
+    "torch>=2.7.0",
+    "torchvision>=0.22.0",
+    "tqdm>=4.67.1",
+]

@@ -1,3 +1,4 @@
+# cython: language_level=3
 # --------------------------------------------------------
 # Fast R-CNN
 # Copyright (c) 2015 Microsoft
@@ -22,11 +23,11 @@ def cpu_nms(np.ndarray[np.float32_t, ndim=2] dets, np.float thresh):
     cdef np.ndarray[np.float32_t, ndim=1] scores = dets[:, 4]
 
     cdef np.ndarray[np.float32_t, ndim=1] areas = (x2 - x1 + 1) * (y2 - y1 + 1)
-    cdef np.ndarray[np.int_t, ndim=1] order = scores.argsort()[::-1]
+    cdef np.ndarray[np.intp_t, ndim=1] order = scores.argsort()[::-1]
 
     cdef int ndets = dets.shape[0]
-    cdef np.ndarray[np.int_t, ndim=1] suppressed = \
-            np.zeros((ndets), dtype=np.int)
+    cdef np.ndarray[np.intp_t, ndim=1] suppressed = \
+            np.zeros((ndets), dtype=int)
 
     # nominal indices
     cdef int _i, _j
@@ -69,11 +70,12 @@ def cpu_nms(np.ndarray[np.float32_t, ndim=2] dets, np.float thresh):
 
 def cpu_soft_nms(np.ndarray[float, ndim=2] boxes, float sigma=0.5, float Nt=0.3, float threshold=0.001, unsigned int method=0):
     cdef unsigned int N = boxes.shape[0]
+    cdef unsigned int i
     cdef float iw, ih, box_area
     cdef float ua
-    cdef int pos = 0
+    cdef unsigned int pos = 0
     cdef float maxscore = 0
-    cdef int maxpos = 0
+    cdef unsigned int maxpos = 0
     cdef float x1,x2,y1,y2,tx1,tx2,ty1,ty2,ts,area,weight,ov
 
     for i in range(N):
