@@ -36,7 +36,7 @@ class TDDFA(object):
             # bfm_fp is the filename on Hugging Face Hub, e.g., "bfm_noneck_v3.pkl"
             # BFMModel's __init__ will handle downloading it.
             # The default value "bfm_noneck_v3.pkl" is the filename.
-            bfm_fp=kvs.get('bfm_fp', "bfm_noneck_v3.pkl"),
+            bfm_fp_placeholder=kvs.get('bfm_fp', "bfm_noneck_v3.pkl"),
             shape_dim=kvs.get('shape_dim', 40),
             exp_dim=kvs.get('exp_dim', 10)
         )
