@@ -13,13 +13,13 @@ cd ../..
 
 import sys
 
-sys.path.append('..')
+# sys.path.append('..')
 
 import os.path as osp
 import cv2
 import numpy as np
 import ctypes
-from utils.functions import plot_image
+from .functions import plot_image
 
 make_abs_path = lambda fn: osp.join(osp.dirname(osp.realpath(__file__)), fn)
 

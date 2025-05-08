@@ -57,8 +57,13 @@ def _load_gpu(fp):
 
 
 _load_cpu = _load
-_numpy_to_tensor = lambda x: torch.from_numpy(x)
-_tensor_to_numpy = lambda x: x.numpy()
-_numpy_to_cuda = lambda x: _tensor_to_cuda(torch.from_numpy(x))
-_cuda_to_tensor = lambda x: x.cpu()
-_cuda_to_numpy = lambda x: x.cpu().numpy()
+def _numpy_to_tensor(x):
+    return torch.from_numpy(x)
+def _tensor_to_numpy(x):
+    return x.numpy()
+def _numpy_to_cuda(x):
+    return _tensor_to_cuda(torch.from_numpy(x))
+def _cuda_to_tensor(x):
+    return x.cpu()
+def _cuda_to_numpy(x):
+    return x.cpu().numpy()

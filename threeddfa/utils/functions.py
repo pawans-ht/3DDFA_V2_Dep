@@ -119,7 +119,7 @@ def draw_landmarks(img, pts, style='fancy', wfp=None, show_flag=False, **kwargs)
 
     dense_flag = kwargs.get('dense_flag')
 
-    if not type(pts) in [tuple, list]:
+    if type(pts) not in [tuple, list]:
         pts = [pts]
     for i in range(len(pts)):
         if dense_flag:
@@ -134,8 +134,9 @@ def draw_landmarks(img, pts, style='fancy', wfp=None, show_flag=False, **kwargs)
             nums = [0, 17, 22, 27, 31, 36, 42, 48, 60, 68]
 
             # close eyes and mouths
-            plot_close = lambda i1, i2: plt.plot([pts[i][0, i1], pts[i][0, i2]], [pts[i][1, i1], pts[i][1, i2]],
-                                                 color=color, lw=lw, alpha=alpha - 0.1)
+            def plot_close(i1, i2):
+                return plt.plot([pts[i][0, i1], pts[i][0, i2]], [pts[i][1, i1], pts[i][1, i2]],
+                                                             color=color, lw=lw, alpha=alpha - 0.1)
             plot_close(41, 36)
             plot_close(47, 42)
             plot_close(59, 48)
