@@ -10,7 +10,7 @@ import yaml
 from collections import deque
 
 from FaceBoxes import FaceBoxes
-from threeeddfa.TDDFA import TDDFA
+from threeddfa.TDDFA import TDDFA
 from utils.render import render
 # from utils.render_ctypes import render
 from utils.functions import cv_draw_landmark, get_suffix
@@ -26,7 +26,7 @@ def main(args):
         os.environ['OMP_NUM_THREADS'] = '4'
 
         from FaceBoxes.FaceBoxes_ONNX import FaceBoxes_ONNX
-        from threeeddfa.TDDFA_ONNX import TDDFA_ONNX
+        from threeddfa.TDDFA_ONNX import TDDFA_ONNX
 
         face_boxes = FaceBoxes_ONNX()
         tddfa = TDDFA_ONNX(**cfg)

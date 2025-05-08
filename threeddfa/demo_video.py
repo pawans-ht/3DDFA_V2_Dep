@@ -4,17 +4,14 @@ __author__ = 'cleardusk'
 
 import argparse
 import imageio
-import cv2
-import numpy as np
 from tqdm import tqdm
 import yaml
-from collections import deque
 
 from FaceBoxes import FaceBoxes
-from threeeddfa.TDDFA import TDDFA
+from threeddfa.TDDFA import TDDFA
 from utils.render import render
 # from utils.render_ctypes import render
-from utils.functions import cv_draw_landmark
+from utils.functions import cv_draw_landmark, get_suffix
 
 
 def main(args):
@@ -27,7 +24,7 @@ def main(args):
         os.environ['OMP_NUM_THREADS'] = '4'
 
         from FaceBoxes.FaceBoxes_ONNX import FaceBoxes_ONNX
-        from threeeddfa.TDDFA_ONNX import TDDFA_ONNX
+        from threeddfa.TDDFA_ONNX import TDDFA_ONNX
 
         face_boxes = FaceBoxes_ONNX()
         tddfa = TDDFA_ONNX(**cfg)
@@ -36,19 +33,18 @@ def main(args):
         tddfa = TDDFA(gpu_mode=gpu_mode, **cfg)
         face_boxes = FaceBoxes()
 
-    # Given a camera
-    # before run this line, make sure you have installed `imageio-ffmpeg`
-    reader = imageio.get_reader("<video0>")
+    # Given a video path
+    fn = args.video_fp.split('/')[-1]
+    reader = imageio.get_reader(args.video_fp)
 
-    # the simple implementation of average smoothing by looking ahead by n_next frames
-    # assert the frames of the video >= n
-    n_pre, n_next = args.n_pre, args.n_next
-    n = n_pre + n_next + 1
-    queue_ver = deque()
-    queue_frame = deque()
+    fps = reader.get_meta_data()['fps']
+
+    suffix = get_suffix(args.video_fp)
+    video_wfp = f'examples/results/videos/{fn.replace(suffix, "")}_{args.opt}.mp4'
+    writer = imageio.get_writer(video_wfp, fps=fps)
 
     # run
-    dense_flag = args.opt in ('2d_dense', '3d')
+    dense_flag = args.opt in ('3d',)
     pre_ver = None
     for i, frame in tqdm(enumerate(reader)):
         frame_bgr = frame[..., ::-1]  # RGB->BGR
@@ -63,15 +59,6 @@ def main(args):
             # refine
             param_lst, roi_box_lst = tddfa(frame_bgr, [ver], crop_policy='landmark')
             ver = tddfa.recon_vers(param_lst, roi_box_lst, dense_flag=dense_flag)[0]
-
-            # padding queue
-            for _ in range(n_pre):
-                queue_ver.append(ver.copy())
-            queue_ver.append(ver.copy())
-
-            for _ in range(n_pre):
-                queue_frame.append(frame_bgr.copy())
-            queue_frame.append(frame_bgr.copy())
         else:
             param_lst, roi_box_lst = tddfa(frame_bgr, [pre_ver], crop_policy='landmark')
 
@@ -84,40 +71,27 @@ def main(args):
 
             ver = tddfa.recon_vers(param_lst, roi_box_lst, dense_flag=dense_flag)[0]
 
-            queue_ver.append(ver.copy())
-            queue_frame.append(frame_bgr.copy())
-
         pre_ver = ver  # for tracking
 
-        # smoothing: enqueue and dequeue ops
-        if len(queue_ver) >= n:
-            ver_ave = np.mean(queue_ver, axis=0)
+        if args.opt == '2d_sparse':
+            res = cv_draw_landmark(frame_bgr, ver)
+        elif args.opt == '3d':
+            res = render(frame_bgr, [ver], tddfa.tri)
+        else:
+            raise ValueError(f'Unknown opt {args.opt}')
 
-            if args.opt == '2d_sparse':
-                img_draw = cv_draw_landmark(queue_frame[n_pre], ver_ave)  # since we use padding
-            elif args.opt == '2d_dense':
-                img_draw = cv_draw_landmark(queue_frame[n_pre], ver_ave, size=1)
-            elif args.opt == '3d':
-                img_draw = render(queue_frame[n_pre], [ver_ave], tddfa.tri, alpha=0.7)
-            else:
-                raise ValueError(f'Unknown opt {args.opt}')
+        writer.append_data(res[..., ::-1])  # BGR->RGB
 
-            cv2.imshow('image', img_draw)
-            k = cv2.waitKey(20)
-            if (k & 0xff == ord('q')):
-                break
-
-            queue_ver.popleft()
-            queue_frame.popleft()
+    writer.close()
+    print(f'Dump to {video_wfp}')
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='The smooth demo of webcam of 3DDFA_V2')
+    parser = argparse.ArgumentParser(description='The demo of video of 3DDFA_V2')
     parser.add_argument('-c', '--config', type=str, default='configs/mb1_120x120.yml')
+    parser.add_argument('-f', '--video_fp', type=str)
     parser.add_argument('-m', '--mode', default='cpu', type=str, help='gpu or cpu mode')
-    parser.add_argument('-o', '--opt', type=str, default='2d_sparse', choices=['2d_sparse', '2d_dense', '3d'])
-    parser.add_argument('-n_pre', default=1, type=int, help='the pre frames of smoothing')
-    parser.add_argument('-n_next', default=1, type=int, help='the next frames of smoothing')
+    parser.add_argument('-o', '--opt', type=str, default='2d_sparse', choices=['2d_sparse', '3d'])
     parser.add_argument('--onnx', action='store_true', default=False)
 
     args = parser.parse_args()

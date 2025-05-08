@@ -32,7 +32,7 @@ import cv2
 import yaml
 
 from FaceBoxes import FaceBoxes
-from threeeddfa.TDDFA import TDDFA
+from threeddfa.TDDFA import TDDFA
 from utils.render import render
 from utils.depth import depth
 from utils.pncc import pncc
@@ -55,7 +55,7 @@ if onnx_flag:
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
     os.environ['OMP_NUM_THREADS'] = '4'
     from FaceBoxes.FaceBoxes_ONNX import FaceBoxes_ONNX
-    from threeeddfa.TDDFA_ONNX import TDDFA_ONNX
+    from threeddfa.TDDFA_ONNX import TDDFA_ONNX
 
     face_boxes = FaceBoxes_ONNX()
     tddfa = TDDFA_ONNX(**cfg)
