@@ -50,8 +50,8 @@ def viz_bbox(img, dets, wfp='out.jpg'):
 class FaceBoxes_ONNX(object):
     def __init__(self, timer_flag=False):
         # --- Define your Hugging Face Hub details ---
-        HF_REPO_ID = "Stable-Human/3ddfa_v2" # TODO: REPLACE THIS (should be same as TDDFA)
-        FACEBOXES_ONNX_FILENAME = "FaceBoxesProd.onnx" # TODO: Confirm this filename on HF Hub
+        HF_REPO_ID = "Stable-Human/3ddfa_v2" 
+        FACEBOXES_ONNX_FILENAME = "FaceBoxesProd.onnx" 
         # ---
 
         try:

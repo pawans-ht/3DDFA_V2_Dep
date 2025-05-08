@@ -53,8 +53,8 @@ class FaceBoxes:
         net = FaceBoxesNet(phase='test', size=None, num_classes=2)  # initialize detector
         # load_model is called with load_to_cpu=True, so model is on CPU initially
         # --- Define your Hugging Face Hub details ---
-        HF_REPO_ID = "Stable-Human/3ddfa_v2" # TODO: REPLACE THIS (should be same as TDDFA)
-        FACEBOXES_PTH_FILENAME = "FaceBoxesProd.pth" # TODO: Confirm this filename on HF Hub
+        HF_REPO_ID = "Stable-Human/3ddfa_v2" 
+        FACEBOXES_PTH_FILENAME = "FaceBoxesProd.pth" 
         # ---
 
         try:
