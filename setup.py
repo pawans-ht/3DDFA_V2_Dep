@@ -14,14 +14,14 @@ with open("readme.md", "r", encoding="utf-8") as fh:
 
 ext_modules = [
     Extension(
-        name="FaceBoxes.utils.nms.cpu_nms",
-        sources=["FaceBoxes/utils/nms/cpu_nms.pyx"],
+        name="threeddfa.FaceBoxes.utils.nms.cpu_nms",
+        sources=["threeddfa/FaceBoxes/utils/nms/cpu_nms.pyx"],
         include_dirs=[numpy.get_include()],
         extra_compile_args=["-Wno-cpp", "-Wno-unused-function"], # from original build.py
     ),
     Extension(
-        name="Sim3DR.Sim3DR_Cython",
-        sources=["Sim3DR/lib/rasterize.pyx", "Sim3DR/lib/rasterize_kernel.cpp"],
+        name="threeddfa.Sim3DR.Sim3DR_Cython",
+        sources=["threeddfa/Sim3DR/lib/rasterize.pyx", "threeddfa/Sim3DR/lib/rasterize_kernel.cpp"],
         language='c++',
         include_dirs=[numpy.get_include()],
         extra_compile_args=["-std=c++11"], # from original setup.py
@@ -48,7 +48,7 @@ class BuildRenderSOCommand(_build_py):
             "render.so",
             "-fPIC"
         ]
-        asset_dir = os.path.join(os.path.dirname(__file__), 'utils', 'asset')
+        asset_dir = os.path.join(os.path.dirname(__file__), 'threeddfa', 'utils', 'asset')
         
         # Check if render.c exists before trying to compile
         render_c_path = os.path.join(asset_dir, 'render.c')
@@ -78,17 +78,6 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/your_repo_path", # Placeholder - PLEASE UPDATE
-    py_modules=[
-        'TDDFA',
-        'TDDFA_ONNX',
-        'demo_video',
-        'demo_video_smooth',
-        'demo_webcam_smooth',
-        'demo', # Assuming demo.py is a module you want to install
-        'gradiodemo',
-        'latency',
-        'speed_cpu'
-    ],
     packages=find_packages(
         exclude=[
             'configs',
@@ -108,7 +97,7 @@ setup(
     # python_requires and install_requires are sourced from pyproject.toml
     include_package_data=True, # To include non-code files specified in MANIFEST.in (if any)
     package_data={
-        'utils.asset': ['render.so'], # Ensure render.so is included
+        'threeddfa.utils.asset': ['render.so'], # Ensure render.so is included
     },
     cmdclass={
         'build_py': BuildRenderSOCommand,

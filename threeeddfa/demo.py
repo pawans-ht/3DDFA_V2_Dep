@@ -8,7 +8,7 @@ import cv2
 import yaml
 
 from FaceBoxes import FaceBoxes
-from TDDFA import TDDFA
+from threeeddfa.TDDFA import TDDFA
 from utils.render import render
 #from utils.render_ctypes import render  # faster
 from utils.depth import depth
@@ -30,7 +30,7 @@ def main(args):
         os.environ['OMP_NUM_THREADS'] = '4'
 
         from FaceBoxes.FaceBoxes_ONNX import FaceBoxes_ONNX
-        from TDDFA_ONNX import TDDFA_ONNX
+        from threeeddfa.TDDFA_ONNX import TDDFA_ONNX
 
         face_boxes = FaceBoxes_ONNX()
         tddfa = TDDFA_ONNX(**cfg)
