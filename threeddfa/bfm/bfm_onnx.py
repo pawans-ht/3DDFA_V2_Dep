@@ -10,10 +10,11 @@ import os.path as osp
 import numpy as np
 import torch
 import torch.nn as nn
+from huggingface_hub import hf_hub_download
 
 from ..utils.io import _load, _numpy_to_cuda, _numpy_to_tensor
 
-make_abs_path = lambda fn: osp.join(osp.dirname(osp.realpath(__file__)), fn)
+# make_abs_path = lambda fn: osp.join(osp.dirname(osp.realpath(__file__)), fn) # Not needed if loading from HF
 
 
 def _to_ctype(arr):
@@ -22,13 +23,37 @@ def _to_ctype(arr):
     return arr
 
 
-def _load_tri(bfm_fp):
-    if osp.split(bfm_fp)[-1] == 'bfm_noneck_v3.pkl':
-        tri = _load(make_abs_path('../configs/tri.pkl'))  # this tri/face is re-built for bfm_noneck_v3
-    else:
-        tri = _load(bfm_fp).get('tri')
+def _load_tri(bfm_filename_on_hub): # bfm_fp is now the filename on Hub
+    HF_REPO_ID = "Stable-Human/3ddfa_v2"
+    TRI_FILENAME = "tri.pkl"
+    
+    tri_data = None
+    try:
+        # For 'bfm_noneck_v3.pkl' (or its .onnx equivalent context), 'tri.pkl' is loaded separately.
+        if bfm_filename_on_hub == 'bfm_noneck_v3.pkl' or bfm_filename_on_hub == 'bfm_noneck_v3.onnx':
+            downloaded_tri_fp = hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=TRI_FILENAME
+            )
+            tri_data = _load(downloaded_tri_fp)
+        else:
+            # For other BFM models, assume 'tri' is part of the main BFM file
+            # This part might need adjustment if other BFM files are used and also need separate tri files.
+            downloaded_bfm_fp = hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=bfm_filename_on_hub
+            )
+            bfm_content = _load(downloaded_bfm_fp)
+            tri_data = bfm_content.get('tri')
+            
+    except Exception as e:
+        print(f"Error downloading triangle data for {bfm_filename_on_hub} from {HF_REPO_ID}: {e}")
+        raise
 
-    tri = _to_ctype(tri.T).astype(np.int32)
+    if tri_data is None:
+        raise ValueError(f"Triangle data (tri) could not be loaded for {bfm_filename_on_hub}")
+        
+    tri = _to_ctype(tri_data.T).astype(np.int32)
     return tri
 
 
@@ -41,7 +66,17 @@ class BFMModel_ONNX(nn.Module):
         _to_tensor = _numpy_to_tensor
 
         # load bfm
-        bfm = _load(bfm_fp)
+        # bfm_fp is the filename on Hugging Face Hub
+        HF_REPO_ID = "Stable-Human/3ddfa_v2"
+        try:
+            downloaded_bfm_fp = hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=bfm_fp
+            )
+            bfm = _load(downloaded_bfm_fp)
+        except Exception as e:
+            print(f"Error downloading BFM model {bfm_fp} from {HF_REPO_ID}: {e}")
+            raise
 
         u = _to_tensor(bfm.get('u').astype(np.float32))
         self.u = u.view(-1, 3).transpose(1, 0)
@@ -70,10 +105,18 @@ class BFMModel_ONNX(nn.Module):
         return pts3d
 
 
-def convert_bfm_to_onnx(bfm_onnx_fp, shape_dim=40, exp_dim=10):
-    # print(shape_dim, exp_dim)
-    bfm_fp = bfm_onnx_fp.replace('.onnx', '.pkl')
-    bfm_decoder = BFMModel_ONNX(bfm_fp=bfm_fp, shape_dim=shape_dim, exp_dim=exp_dim)
+def convert_bfm_to_onnx(target_onnx_filename_on_hub, shape_dim=40, exp_dim=10):
+    # This function converts a .pkl BFM model (fetched from Hub) to an ONNX model.
+    # The resulting ONNX model is saved locally with the target_onnx_filename_on_hub name.
+    # It's assumed this ONNX file would then be manually uploaded to the Hub.
+    
+    HF_REPO_ID = "Stable-Human/3ddfa_v2"
+    # Assumes the .pkl filename can be derived from the target .onnx filename
+    bfm_pkl_filename_on_hub = target_onnx_filename_on_hub.replace('.onnx', '.pkl')
+
+    print(f"Attempting to convert {bfm_pkl_filename_on_hub} from Hub to local {target_onnx_filename_on_hub}")
+
+    bfm_decoder = BFMModel_ONNX(bfm_fp=bfm_pkl_filename_on_hub, shape_dim=shape_dim, exp_dim=exp_dim)
     bfm_decoder.eval()
 
     # dummy_input = torch.randn(12 + shape_dim + exp_dim)
@@ -82,7 +125,7 @@ def convert_bfm_to_onnx(bfm_onnx_fp, shape_dim=40, exp_dim=10):
     torch.onnx.export(
         bfm_decoder,
         (R, offset, alpha_shp, alpha_exp),
-        bfm_onnx_fp,
+        target_onnx_filename_on_hub, # Save locally with this name
         input_names=['R', 'offset', 'alpha_shp', 'alpha_exp'],
         output_names=['output'],
         dynamic_axes={
@@ -91,16 +134,15 @@ def convert_bfm_to_onnx(bfm_onnx_fp, shape_dim=40, exp_dim=10):
         },
         do_constant_folding=True
     )
-    print(f'Convert {bfm_fp} to {bfm_onnx_fp} done.')
+    print(f'Convert {bfm_pkl_filename_on_hub} (from Hub) to local {target_onnx_filename_on_hub} done.')
 
 
 if __name__ == '__main__':
-    # The __main__ block might not be runnable directly in an installed package context
-    # without further adjustments to how configs are found or if it's meant for dev only.
-    # For now, adjusting path assuming it might be run from project root during dev.
-    # Consider removing or refactoring this for a packaged app.
-    # convert_bfm_to_onnx('../configs/bfm_noneck_v3.onnx') # Original relative to file
-    # If bfm_noneck_v3.onnx is now in threeddfa/configs:
-    # convert_bfm_to_onnx(make_abs_path('../configs/bfm_noneck_v3.onnx'))
-    # Or if it's meant to be created from a .pkl in threeddfa/configs:
-    convert_bfm_to_onnx(make_abs_path('../configs/bfm_noneck_v3.onnx')) # Assuming .onnx is target path
+    # This main block is for development/testing to generate the ONNX file.
+    # The generated file 'bfm_noneck_v3.onnx' should then be uploaded to Hugging Face Hub.
+    # The function convert_bfm_to_onnx now expects the target ONNX filename as it would appear on the Hub (or locally).
+    # It derives the .pkl filename from it to download from the Hub.
+    target_local_bfm_onnx_filename = "bfm_noneck_v3.onnx"
+    print(f"Running conversion for {target_local_bfm_onnx_filename}. Output will be local.")
+    print("Ensure the corresponding .pkl file (e.g., bfm_noneck_v3.pkl) is on Hugging Face Hub.")
+    convert_bfm_to_onnx(target_local_bfm_onnx_filename)

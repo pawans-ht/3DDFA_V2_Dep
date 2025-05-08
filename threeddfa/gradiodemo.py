@@ -3,6 +3,7 @@ import sys
 from subprocess import call
 import os
 import torch
+import os.path as osp # Add osp import
 
 torch.hub.download_url_to_file('https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Solvay_conference_1927.jpg/1400px-Solvay_conference_1927.jpg', 'solvay.jpg')
 
@@ -25,15 +26,12 @@ import matplotlib.pyplot as plt
 from skimage import io
 import gradio as gr
 
-# load config
-# Assuming this script is run from the 'threeddfa' directory or project root
-# and 'configs' is a subdirectory of 'threeddfa'.
-# The path 'configs/mb1_120x120.yml' should resolve correctly if CWD is 'threeddfa/'.
-# For robustness if run from elsewhere, an absolute path or importlib.resources is better.
-# For now, assuming the execution context makes 'configs/mb1_120x120.yml' valid relative to CWD
-# or that this script is typically run from the threeddfa package directory.
-# If this script is in threeddfa/ and configs in threeddfa/configs/, then 'configs/...' is correct.
-cfg = yaml.load(open('configs/mb1_120x120.yml'), Loader=yaml.SafeLoader)
+# Define make_abs_path relative to this script file
+make_abs_path = lambda fn: osp.join(osp.dirname(osp.realpath(__file__)), fn)
+
+# load config relative to this script file
+config_path = make_abs_path('configs/mb1_120x120.yml')
+cfg = yaml.load(open(config_path), Loader=yaml.SafeLoader)
 
 # Init FaceBoxes and TDDFA, recommend using onnx flag
 onnx_flag = True  # or True to use ONNX to speed up

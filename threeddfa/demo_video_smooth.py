@@ -8,6 +8,7 @@ import numpy as np
 from tqdm import tqdm
 import yaml
 from collections import deque
+import os.path as osp # Add osp import
 
 from .FaceBoxes import FaceBoxes
 from .TDDFA import TDDFA
@@ -16,10 +17,13 @@ from .utils.render import render
 from .utils.functions import cv_draw_landmark, get_suffix
 
 
+# Define make_abs_path relative to this script file
+make_abs_path = lambda fn: osp.join(osp.dirname(osp.realpath(__file__)), fn)
+
 def main(args):
-    # Assuming args.config is a path relative to the script's location or an absolute path.
-    # The default path in argparse will be adjusted.
-    cfg = yaml.load(open(args.config), Loader=yaml.SafeLoader)
+    # Resolve the config path relative to this script file
+    config_path = make_abs_path(args.config)
+    cfg = yaml.load(open(config_path), Loader=yaml.SafeLoader)
 
     # Init FaceBoxes and TDDFA, recommend using onnx flag
     if args.onnx:
@@ -146,7 +150,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='The smooth demo of video of 3DDFA_V2')
-    # Default path relative to the script's location (threeddfa/demo_video_smooth.py)
+    # Default path is relative to this script file (threeddfa/demo_video_smooth.py)
     # to access threeddfa/configs/mb1_120x120.yml
     parser.add_argument('-c', '--config', type=str, default='configs/mb1_120x120.yml')
     parser.add_argument('-f', '--video_fp', type=str)

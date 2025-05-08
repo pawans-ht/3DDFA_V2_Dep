@@ -33,7 +33,10 @@ class TDDFA(object):
 
         # load BFM
         self.bfm = BFMModel(
-            bfm_fp=kvs.get('bfm_fp', make_abs_path('../configs/bfm_noneck_v3.pkl')), # Adjusted path
+            # bfm_fp is the filename on Hugging Face Hub, e.g., "bfm_noneck_v3.pkl"
+            # BFMModel's __init__ will handle downloading it.
+            # The default value "bfm_noneck_v3.pkl" is the filename.
+            bfm_fp=kvs.get('bfm_fp', "bfm_noneck_v3.pkl"),
             shape_dim=kvs.get('shape_dim', 40),
             exp_dim=kvs.get('exp_dim', 10)
         )
@@ -44,8 +47,11 @@ class TDDFA(object):
         self.gpu_id = kvs.get('gpu_id', 0)
         self.size = kvs.get('size', 120)
 
+        # param_mean_std_fp is the filename on Hugging Face Hub
+        # The default value is constructed to be the filename.
         param_mean_std_fp = kvs.get(
-            'param_mean_std_fp', make_abs_path(f'../configs/param_mean_std_62d_{self.size}x{self.size}.pkl') # Adjusted path
+            'param_mean_std_fp',
+            f'param_mean_std_62d_{self.size}x{self.size}.pkl'
         )
 
         # load model, default output is dimension with length 62 = 12(pose) + 40(shape) +10(expression)
@@ -92,7 +98,17 @@ class TDDFA(object):
         self.transform = transform
 
         # params normalization config
-        r = _load(param_mean_std_fp)
+        # Download param_mean_std_fp from Hugging Face Hub
+        # param_mean_std_fp was obtained from kvs.get or default value above, now it's a filename
+        try:
+            downloaded_param_mean_std_fp = hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=param_mean_std_fp
+            )
+            r = _load(downloaded_param_mean_std_fp)
+        except Exception as e:
+            print(f"Error downloading param_mean_std file {param_mean_std_fp} from {HF_REPO_ID}: {e}")
+            raise
         self.param_mean = r.get('mean')
         self.param_std = r.get('std')
 

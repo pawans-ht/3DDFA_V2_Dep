@@ -27,18 +27,31 @@ class TDDFA_ONNX(object):
         # torch.set_grad_enabled(False)
 
         # load onnx version of BFM
-        bfm_fp = kvs.get('bfm_fp', make_abs_path('../configs/bfm_noneck_v3.pkl')) # Adjusted path
-        bfm_onnx_fp = bfm_fp.replace('.pkl', '.onnx')
-        if not osp.exists(bfm_onnx_fp):
-            convert_bfm_to_onnx(
-                bfm_onnx_fp,
-                shape_dim=kvs.get('shape_dim', 40),
-                exp_dim=kvs.get('exp_dim', 10)
-            )
-        self.bfm_session = onnxruntime.InferenceSession(bfm_onnx_fp, None)
+        # Determine BFM ONNX filename to download from Hub
+        # Assumes bfm_fp in kvs refers to the base name like 'bfm_noneck_v3'
+        # or the full .pkl filename like 'bfm_noneck_v3.pkl'
+        bfm_base_name = kvs.get('bfm_fp', "bfm_noneck_v3.pkl")
+        if bfm_base_name.endswith('.pkl'):
+             bfm_base_name = bfm_base_name[:-4] # Remove .pkl if present
+        bfm_onnx_filename_on_hub = f"{bfm_base_name}.onnx"
 
-        # load for optimization
-        bfm = BFMModel(bfm_fp, shape_dim=kvs.get('shape_dim', 40), exp_dim=kvs.get('exp_dim', 10))
+        HF_REPO_ID = "Stable-Human/3ddfa_v2" # Defined later, but needed here too
+
+        try:
+            downloaded_bfm_onnx_fp = hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=bfm_onnx_filename_on_hub
+            )
+            self.bfm_session = onnxruntime.InferenceSession(downloaded_bfm_onnx_fp, None)
+        except Exception as e:
+             print(f"Error downloading BFM ONNX model {bfm_onnx_filename_on_hub} from {HF_REPO_ID}: {e}")
+             # Consider fallback or clearer error message
+             raise
+
+        # load BFMModel (PyTorch version) for optimization data (tri, bases)
+        # BFMModel now expects the filename on Hub
+        bfm_pkl_filename_on_hub = bfm_onnx_filename_on_hub.replace('.onnx', '.pkl')
+        bfm = BFMModel(bfm_fp=bfm_pkl_filename_on_hub, shape_dim=kvs.get('shape_dim', 40), exp_dim=kvs.get('exp_dim', 10))
         self.tri = bfm.tri
         self.u_base, self.w_shp_base, self.w_exp_base = bfm.u_base, bfm.w_shp_base, bfm.w_exp_base
 
@@ -48,7 +61,8 @@ class TDDFA_ONNX(object):
         self.size = kvs.get('size', 120)
 
         param_mean_std_fp = kvs.get(
-            'param_mean_std_fp', make_abs_path(f'../configs/param_mean_std_62d_{self.size}x{self.size}.pkl') # Adjusted path
+            # param_mean_std_fp is now the filename on Hugging Face Hub
+            'param_mean_std_fp', f'param_mean_std_62d_{self.size}x{self.size}.pkl'
         )
 
         # Determine the ONNX model filename expected on Hugging Face Hub
@@ -70,6 +84,7 @@ class TDDFA_ONNX(object):
                 repo_id=HF_REPO_ID,
                 filename=onnx_filename_on_hub,
             )
+            # Load the main TDDFA ONNX session
             self.session = onnxruntime.InferenceSession(downloaded_onnx_fp, None)
         except Exception as e:
             # Original code had a fallback to convert .pth to .onnx.
@@ -81,13 +96,25 @@ class TDDFA_ONNX(object):
             # 3. Load the session from the cached .onnx path.
             # This is more complex and not implemented here.
             print(f"Error downloading/loading ONNX model {onnx_filename_on_hub} from {HF_REPO_ID}: {e}")
-            print("Please ensure the ONNX model is available on Hugging Face Hub or implement on-the-fly conversion.")
+            print(f"Please ensure the ONNX model {onnx_filename_on_hub} is available on Hugging Face Hub.")
             raise
 
-        # params normalization config
-        r = _load(param_mean_std_fp)
-        self.param_mean = r.get('mean')
-        self.param_std = r.get('std')
+        # Download and load params normalization config
+        param_mean_std_filename = param_mean_std_fp # Already determined above
+        try:
+             downloaded_param_mean_std_fp = hf_hub_download(
+                 repo_id=HF_REPO_ID,
+                 filename=param_mean_std_filename
+             )
+             r = _load(downloaded_param_mean_std_fp)
+        except Exception as e:
+             print(f"Error downloading param_mean_std file {param_mean_std_filename} from {HF_REPO_ID}: {e}")
+             raise
+
+        # params normalization config loaded via hf_hub_download in the try block above
+        # r = _load(param_mean_std_fp) # This line is now redundant
+        self.param_mean = r.get('mean') # r is defined in the try block above
+        self.param_std = r.get('std')   # r is defined in the try block above
 
     def __call__(self, img_ori, objs, **kvs):
         # Crop image, forward to get the param

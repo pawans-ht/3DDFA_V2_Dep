@@ -6,6 +6,7 @@ import sys
 import argparse
 import cv2
 import yaml
+import os.path as osp # Add osp import
 
 from .FaceBoxes import FaceBoxes
 from .TDDFA import TDDFA
@@ -19,10 +20,13 @@ def main(args):
         'reg': Timer(),
         'recon': Timer()
     }
+    
+    # Define make_abs_path relative to this script file
+    make_abs_path = lambda fn: osp.join(osp.dirname(osp.realpath(__file__)), fn)
 
-    # Assuming args.config is a path relative to the script's location or an absolute path.
-    # The default path in argparse will be adjusted.
-    cfg = yaml.load(open(args.config), Loader=yaml.SafeLoader)
+    # Resolve the config path relative to this script file
+    config_path = make_abs_path(args.config)
+    cfg = yaml.load(open(config_path), Loader=yaml.SafeLoader)
 
     # Init FaceBoxes and TDDFA
     if args.onnx:
@@ -79,7 +83,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='The latency testing of still image of 3DDFA_V2')
-    # Default path relative to the script's location (threeddfa/latency.py)
+    # Default path is relative to this script file (threeddfa/latency.py)
     # to access threeddfa/configs/mb1_120x120.yml
     parser.add_argument('-c', '--config', type=str, default='configs/mb1_120x120.yml')
     parser.add_argument('-f', '--img_fp', type=str, default='examples/inputs/JianzhuGuo.jpg')

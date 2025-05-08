@@ -1,6 +1,7 @@
 # Include all files in the threeddfa/configs directory
 graft threeddfa/configs
+# Exclude .pkl files from threeddfa/configs as they are hosted on Hugging Face Hub
+prune threeddfa/configs/*.pkl
 
-# Include the compiled render.so (ensure this path is correct relative to setup.py)
-# This assumes render.so is built into threeddfa/utils/asset/ by your setup.py
+# Include the compiled render.so
 include threeddfa/utils/asset/render.so
