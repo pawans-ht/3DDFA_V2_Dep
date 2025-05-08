@@ -62,7 +62,7 @@ class TDDFA_ONNX(object):
             raise ValueError("ONNX filename cannot be determined. Provide 'onnx_fp' or 'checkpoint_fp'.")
 
         # --- Define your Hugging Face Hub details ---
-        HF_REPO_ID = "Stable-Human/3ddfa_v2" # TODO: REPLACE THIS
+        HF_REPO_ID = "Stable-Human/3ddfa_v2" 
         # ---
 
         try:

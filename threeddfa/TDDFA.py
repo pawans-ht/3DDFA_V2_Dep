@@ -63,7 +63,7 @@ class TDDFA(object):
         # --- Define your Hugging Face Hub details ---
         # You will need to create this repository on Hugging Face Hub and upload your weights.
         # All weights will be in this single repository.
-        HF_REPO_ID = "Stable-Human/3ddfa_v2" # TODO: REPLACE THIS
+        HF_REPO_ID = "Stable-Human/3ddfa_v2" 
         # ---
 
         try:

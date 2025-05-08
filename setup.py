@@ -72,12 +72,12 @@ class BuildRenderSOCommand(_build_py):
 setup(
     # name, version, install_requires, python_requires are defined in pyproject.toml
     # and will be used automatically by setuptools.
-    author="Your Name / Original Author", # Placeholder - PLEASE UPDATE
-    author_email="your.email@example.com", # Placeholder - PLEASE UPDATE
-    description="3DDFA_V2 with dependencies packaged", # Placeholder - PLEASE UPDATE
+    author="Pawan Sharma / Original Author",
+    author_email="18pawansharma72000@gmail.com",
+    description="3DDFA_V2 with dependencies packaged",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/your_repo_path", # Placeholder - PLEASE UPDATE
+    url="https://github.com/pawans-ht/3DDFA_V2_Dep",
     packages=find_packages(
         exclude=[
             'configs',
