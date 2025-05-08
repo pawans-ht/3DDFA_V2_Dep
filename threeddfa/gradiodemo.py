@@ -6,40 +6,20 @@ import torch
 
 torch.hub.download_url_to_file('https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Solvay_conference_1927.jpg/1400px-Solvay_conference_1927.jpg', 'solvay.jpg')
 
-def run_cmd(command):
-    try:
-        print(command)
-        call(command, shell=True)
-    except Exception as e:
-        print(f"Errorrrrr: {e}!")
-        
-print(os.getcwd())
-os.chdir("/app/FaceBoxes/utils")
-print(os.getcwd())
-run_cmd("python3 build.py build_ext --inplace")
-os.chdir("/app/Sim3DR")
-print(os.getcwd())
-run_cmd("python3 setup.py build_ext --inplace")
-print(os.getcwd())
-os.chdir("/app/utils/asset")
-print(os.getcwd())
-run_cmd("gcc -shared -Wall -O3 render.c -o render.so -fPIC")
-os.chdir("/app")
-print(os.getcwd())
-
+# Runtime compilation steps removed as they should be handled by setup.py during installation.
 
 import cv2
 import yaml
 
-from FaceBoxes import FaceBoxes
-from threeddfa.TDDFA import TDDFA
-from utils.render import render
-from utils.depth import depth
-from utils.pncc import pncc
-from utils.uv import uv_tex
-from utils.pose import viz_pose
-from utils.serialization import ser_to_ply, ser_to_obj
-from utils.functions import draw_landmarks, get_suffix
+from .FaceBoxes import FaceBoxes
+from .TDDFA import TDDFA
+from .utils.render import render
+from .utils.depth import depth
+from .utils.pncc import pncc
+from .utils.uv import uv_tex
+from .utils.pose import viz_pose
+from .utils.serialization import ser_to_ply, ser_to_obj
+from .utils.functions import draw_landmarks, get_suffix
 
 import matplotlib.pyplot as plt
 from skimage import io
@@ -54,8 +34,8 @@ if onnx_flag:
     import os
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
     os.environ['OMP_NUM_THREADS'] = '4'
-    from FaceBoxes.FaceBoxes_ONNX import FaceBoxes_ONNX
-    from threeddfa.TDDFA_ONNX import TDDFA_ONNX
+    from .FaceBoxes.FaceBoxes_ONNX import FaceBoxes_ONNX
+    from .TDDFA_ONNX import TDDFA_ONNX
 
     face_boxes = FaceBoxes_ONNX()
     tddfa = TDDFA_ONNX(**cfg)

@@ -7,17 +7,17 @@ import argparse
 import cv2
 import yaml
 
-from FaceBoxes import FaceBoxes
-from threeddfa.TDDFA import TDDFA
-from utils.render import render
-#from utils.render_ctypes import render  # faster
-from utils.depth import depth
-from utils.pncc import pncc
-from utils.uv import uv_tex
-from utils.pose import viz_pose
-from utils.serialization import ser_to_ply, ser_to_obj
-from utils.functions import draw_landmarks, get_suffix
-from utils.tddfa_util import str2bool
+from .FaceBoxes import FaceBoxes
+from .TDDFA import TDDFA
+from .utils.render import render
+#from .utils.render_ctypes import render  # faster
+from .utils.depth import depth
+from .utils.pncc import pncc
+from .utils.uv import uv_tex
+from .utils.pose import viz_pose
+from .utils.serialization import ser_to_ply, ser_to_obj
+from .utils.functions import draw_landmarks, get_suffix
+from .utils.tddfa_util import str2bool
 
 
 def main(args):
@@ -29,8 +29,8 @@ def main(args):
         os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
         os.environ['OMP_NUM_THREADS'] = '4'
 
-        from FaceBoxes.FaceBoxes_ONNX import FaceBoxes_ONNX
-        from threeddfa.TDDFA_ONNX import TDDFA_ONNX
+        from .FaceBoxes.FaceBoxes_ONNX import FaceBoxes_ONNX
+        from .TDDFA_ONNX import TDDFA_ONNX
 
         face_boxes = FaceBoxes_ONNX()
         tddfa = TDDFA_ONNX(**cfg)

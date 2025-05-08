@@ -145,7 +145,7 @@ def main():
     face_boxes = FaceBoxes(timer_flag=True)
 
     fn = 'trump_hillary.jpg'
-    img_fp = f'../examples/inputs/{fn}'
+    img_fp = f'../../examples/inputs/{fn}'
     img = cv2.imread(img_fp)
     print(f'input shape: {img.shape}')
     dets = face_boxes(img)  # xmin, ymin, w, h
@@ -157,7 +157,7 @@ def main():
         dets = face_boxes(img)
 
     wfn = fn.replace('.jpg', '_det.jpg')
-    wfp = osp.join('../examples/results', wfn)
+    wfp = osp.join('../../examples/results', wfn)
     viz_bbox(img, dets, wfp)
 
 
