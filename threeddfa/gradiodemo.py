@@ -26,6 +26,13 @@ from skimage import io
 import gradio as gr
 
 # load config
+# Assuming this script is run from the 'threeddfa' directory or project root
+# and 'configs' is a subdirectory of 'threeddfa'.
+# The path 'configs/mb1_120x120.yml' should resolve correctly if CWD is 'threeddfa/'.
+# For robustness if run from elsewhere, an absolute path or importlib.resources is better.
+# For now, assuming the execution context makes 'configs/mb1_120x120.yml' valid relative to CWD
+# or that this script is typically run from the threeddfa package directory.
+# If this script is in threeddfa/ and configs in threeddfa/configs/, then 'configs/...' is correct.
 cfg = yaml.load(open('configs/mb1_120x120.yml'), Loader=yaml.SafeLoader)
 
 # Init FaceBoxes and TDDFA, recommend using onnx flag

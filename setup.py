@@ -96,9 +96,7 @@ setup(
     ext_modules=ext_modules,
     # python_requires and install_requires are sourced from pyproject.toml
     include_package_data=True, # To include non-code files specified in MANIFEST.in (if any)
-    package_data={
-        'threeddfa.utils.asset': ['render.so'], # Ensure render.so is included
-    },
+    # package_data has been removed as MANIFEST.in will handle this.
     cmdclass={
         'build_py': BuildRenderSOCommand,
     },

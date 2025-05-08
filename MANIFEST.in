@@ -1,0 +1,6 @@
+# Include all files in the threeddfa/configs directory
+graft threeddfa/configs
+
+# Include the compiled render.so (ensure this path is correct relative to setup.py)
+# This assumes render.so is built into threeddfa/utils/asset/ by your setup.py
+include threeddfa/utils/asset/render.so

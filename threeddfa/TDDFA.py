@@ -9,6 +9,7 @@ import cv2
 import torch
 from torchvision.transforms import Compose
 import torch.backends.cudnn as cudnn
+from huggingface_hub import hf_hub_download
 
 from . import models
 from .bfm import BFMModel
@@ -32,7 +33,7 @@ class TDDFA(object):
 
         # load BFM
         self.bfm = BFMModel(
-            bfm_fp=kvs.get('bfm_fp', make_abs_path('configs/bfm_noneck_v3.pkl')),
+            bfm_fp=kvs.get('bfm_fp', make_abs_path('../configs/bfm_noneck_v3.pkl')), # Adjusted path
             shape_dim=kvs.get('shape_dim', 40),
             exp_dim=kvs.get('exp_dim', 10)
         )
@@ -44,7 +45,7 @@ class TDDFA(object):
         self.size = kvs.get('size', 120)
 
         param_mean_std_fp = kvs.get(
-            'param_mean_std_fp', make_abs_path(f'configs/param_mean_std_62d_{self.size}x{self.size}.pkl')
+            'param_mean_std_fp', make_abs_path(f'../configs/param_mean_std_62d_{self.size}x{self.size}.pkl') # Adjusted path
         )
 
         # load model, default output is dimension with length 62 = 12(pose) + 40(shape) +10(expression)
@@ -54,7 +55,28 @@ class TDDFA(object):
             size=self.size,
             mode=kvs.get('mode', 'small')
         )
-        model = load_model(model, kvs.get('checkpoint_fp'))
+        # model = load_model(model, kvs.get('checkpoint_fp')) # Original line
+        
+        checkpoint_filename_on_hub = kvs.get('checkpoint_fp')
+        # Ensure checkpoint_fp from kvs is just the filename, e.g., "mb1_120x120.pth"
+
+        # --- Define your Hugging Face Hub details ---
+        # You will need to create this repository on Hugging Face Hub and upload your weights.
+        # All weights will be in this single repository.
+        HF_REPO_ID = "Stable-Human/3ddfa_v2" # TODO: REPLACE THIS
+        # ---
+
+        try:
+            downloaded_checkpoint_fp = hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=checkpoint_filename_on_hub,
+                # library_name="threeddfa", # Optional: for user agent
+                # library_version="0.1.0"   # Optional: for user agent
+            )
+            model = load_model(model, downloaded_checkpoint_fp)
+        except Exception as e:
+            print(f"Error downloading/loading model {checkpoint_filename_on_hub} from {HF_REPO_ID}: {e}")
+            raise
 
         if self.gpu_mode:
             cudnn.benchmark = True

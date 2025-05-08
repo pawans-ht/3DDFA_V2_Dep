@@ -24,7 +24,7 @@ def _to_ctype(arr):
 
 def _load_tri(bfm_fp):
     if osp.split(bfm_fp)[-1] == 'bfm_noneck_v3.pkl':
-        tri = _load(make_abs_path('../../configs/tri.pkl'))  # this tri/face is re-built for bfm_noneck_v3
+        tri = _load(make_abs_path('../configs/tri.pkl'))  # this tri/face is re-built for bfm_noneck_v3
     else:
         tri = _load(bfm_fp).get('tri')
 
@@ -95,4 +95,12 @@ def convert_bfm_to_onnx(bfm_onnx_fp, shape_dim=40, exp_dim=10):
 
 
 if __name__ == '__main__':
-    convert_bfm_to_onnx('../../configs/bfm_noneck_v3.onnx')
+    # The __main__ block might not be runnable directly in an installed package context
+    # without further adjustments to how configs are found or if it's meant for dev only.
+    # For now, adjusting path assuming it might be run from project root during dev.
+    # Consider removing or refactoring this for a packaged app.
+    # convert_bfm_to_onnx('../configs/bfm_noneck_v3.onnx') # Original relative to file
+    # If bfm_noneck_v3.onnx is now in threeddfa/configs:
+    # convert_bfm_to_onnx(make_abs_path('../configs/bfm_noneck_v3.onnx'))
+    # Or if it's meant to be created from a .pkl in threeddfa/configs:
+    convert_bfm_to_onnx(make_abs_path('../configs/bfm_noneck_v3.onnx')) # Assuming .onnx is target path

@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import os.path as osp
+from huggingface_hub import hf_hub_download # Added import
 
 import torch
 import numpy as np
@@ -26,7 +27,7 @@ scale_flag = True
 HEIGHT, WIDTH = 720, 1080
 
 make_abs_path = lambda fn: osp.join(osp.dirname(osp.realpath(__file__)), fn)
-pretrained_path = make_abs_path('weights/FaceBoxesProd.pth')
+# pretrained_path = make_abs_path('weights/FaceBoxesProd.pth') # Original path
 
 
 def viz_bbox(img, dets, wfp='out.jpg'):
@@ -51,7 +52,20 @@ class FaceBoxes:
 
         net = FaceBoxesNet(phase='test', size=None, num_classes=2)  # initialize detector
         # load_model is called with load_to_cpu=True, so model is on CPU initially
-        self.net = load_model(net, pretrained_path=pretrained_path, load_to_cpu=True)
+        # --- Define your Hugging Face Hub details ---
+        HF_REPO_ID = "Stable-Human/3ddfa_v2" # TODO: REPLACE THIS (should be same as TDDFA)
+        FACEBOXES_PTH_FILENAME = "FaceBoxesProd.pth" # TODO: Confirm this filename on HF Hub
+        # ---
+
+        try:
+            downloaded_pth_path = hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=FACEBOXES_PTH_FILENAME,
+            )
+            self.net = load_model(net, pretrained_path=downloaded_pth_path, load_to_cpu=True)
+        except Exception as e:
+            print(f"Error downloading/loading FaceBoxes .pth model {FACEBOXES_PTH_FILENAME} from {HF_REPO_ID}: {e}")
+            raise
         self.net = self.net.to(self.device)  # Move model to specified device
         self.net.eval()
         # print('Finished loading model!')

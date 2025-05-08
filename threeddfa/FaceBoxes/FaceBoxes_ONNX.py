@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import os.path as osp
+from huggingface_hub import hf_hub_download # Added import
 
 import torch
 import numpy as np
@@ -11,7 +12,8 @@ from .utils.nms_wrapper import nms
 from .utils.box_utils import decode
 from .utils.timer import Timer
 from .utils.config import cfg
-from .onnx import convert_to_onnx
+# from .onnx import convert_to_onnx # This might not be needed if .onnx is directly downloaded
+# If on-the-fly conversion from .pth is still desired, this import and logic would need to be adapted.
 
 import onnxruntime
 
@@ -27,7 +29,7 @@ scale_flag = True
 HEIGHT, WIDTH = 720, 1080
 
 make_abs_path = lambda fn: osp.join(osp.dirname(osp.realpath(__file__)), fn)
-onnx_path = make_abs_path('weights/FaceBoxesProd.onnx')
+# onnx_path = make_abs_path('weights/FaceBoxesProd.onnx') # Original path
 
 
 def viz_bbox(img, dets, wfp='out.jpg'):
@@ -47,9 +49,30 @@ def viz_bbox(img, dets, wfp='out.jpg'):
 
 class FaceBoxes_ONNX(object):
     def __init__(self, timer_flag=False):
-        if not osp.exists(onnx_path):
-            convert_to_onnx(onnx_path)
-        self.session = onnxruntime.InferenceSession(onnx_path, None)
+        # --- Define your Hugging Face Hub details ---
+        HF_REPO_ID = "Stable-Human/3ddfa_v2" # TODO: REPLACE THIS (should be same as TDDFA)
+        FACEBOXES_ONNX_FILENAME = "FaceBoxesProd.onnx" # TODO: Confirm this filename on HF Hub
+        # ---
+
+        try:
+            downloaded_onnx_path = hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=FACEBOXES_ONNX_FILENAME,
+            )
+            self.session = onnxruntime.InferenceSession(downloaded_onnx_path, None)
+        except Exception as e:
+            # The original code had a fallback to convert .pth to .onnx.
+            # For simplicity with Hugging Face Hub, it's best to upload pre-converted .onnx files.
+            # If on-the-fly conversion from a downloaded .pth is essential:
+            # 1. Import convert_to_onnx from .onnx
+            # 2. Download the .pth file using hf_hub_download.
+            # 3. Call a modified convert_to_onnx that takes the .pth path,
+            #    converts it, saves to a local cache, and returns the cached .onnx path.
+            # 4. Load the session from the cached .onnx path.
+            # This is more complex and not implemented here.
+            print(f"Error downloading/loading FaceBoxes ONNX model {FACEBOXES_ONNX_FILENAME} from {HF_REPO_ID}: {e}")
+            print("Please ensure the ONNX model is available on Hugging Face Hub or implement on-the-fly conversion.")
+            raise
 
         self.timer_flag = timer_flag
 

@@ -20,6 +20,8 @@ def main(args):
         'recon': Timer()
     }
 
+    # Assuming args.config is a path relative to the script's location or an absolute path.
+    # The default path in argparse will be adjusted.
     cfg = yaml.load(open(args.config), Loader=yaml.SafeLoader)
 
     # Init FaceBoxes and TDDFA
@@ -77,6 +79,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='The latency testing of still image of 3DDFA_V2')
+    # Default path relative to the script's location (threeddfa/latency.py)
+    # to access threeddfa/configs/mb1_120x120.yml
     parser.add_argument('-c', '--config', type=str, default='configs/mb1_120x120.yml')
     parser.add_argument('-f', '--img_fp', type=str, default='examples/inputs/JianzhuGuo.jpg')
     parser.add_argument('--onnx', action='store_true', default=False)

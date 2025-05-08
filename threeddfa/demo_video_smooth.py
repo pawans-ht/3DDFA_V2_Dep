@@ -17,6 +17,8 @@ from .utils.functions import cv_draw_landmark, get_suffix
 
 
 def main(args):
+    # Assuming args.config is a path relative to the script's location or an absolute path.
+    # The default path in argparse will be adjusted.
     cfg = yaml.load(open(args.config), Loader=yaml.SafeLoader)
 
     # Init FaceBoxes and TDDFA, recommend using onnx flag
@@ -144,6 +146,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='The smooth demo of video of 3DDFA_V2')
+    # Default path relative to the script's location (threeddfa/demo_video_smooth.py)
+    # to access threeddfa/configs/mb1_120x120.yml
     parser.add_argument('-c', '--config', type=str, default='configs/mb1_120x120.yml')
     parser.add_argument('-f', '--video_fp', type=str)
     parser.add_argument('-m', '--mode', default='cpu', type=str, help='gpu or cpu mode')

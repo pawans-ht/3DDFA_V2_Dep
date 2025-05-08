@@ -6,6 +6,7 @@ import os.path as osp
 import numpy as np
 import cv2
 import onnxruntime
+from huggingface_hub import hf_hub_download
 
 from .utils.onnx import convert_to_onnx
 from .utils.io import _load
@@ -26,7 +27,7 @@ class TDDFA_ONNX(object):
         # torch.set_grad_enabled(False)
 
         # load onnx version of BFM
-        bfm_fp = kvs.get('bfm_fp', make_abs_path('configs/bfm_noneck_v3.pkl'))
+        bfm_fp = kvs.get('bfm_fp', make_abs_path('../configs/bfm_noneck_v3.pkl')) # Adjusted path
         bfm_onnx_fp = bfm_fp.replace('.pkl', '.onnx')
         if not osp.exists(bfm_onnx_fp):
             convert_bfm_to_onnx(
@@ -47,17 +48,41 @@ class TDDFA_ONNX(object):
         self.size = kvs.get('size', 120)
 
         param_mean_std_fp = kvs.get(
-            'param_mean_std_fp', make_abs_path(f'configs/param_mean_std_62d_{self.size}x{self.size}.pkl')
+            'param_mean_std_fp', make_abs_path(f'../configs/param_mean_std_62d_{self.size}x{self.size}.pkl') # Adjusted path
         )
 
-        onnx_fp = kvs.get('onnx_fp', kvs.get('checkpoint_fp').replace('.pth', '.onnx'))
+        # Determine the ONNX model filename expected on Hugging Face Hub
+        # This assumes kvs['checkpoint_fp'] is the original .pth filename (e.g., "mb1_120x120.pth")
+        # and kvs['onnx_fp'] if provided is the direct filename (e.g., "mb1_120x120.onnx")
+        onnx_filename_on_hub = kvs.get('onnx_fp')
+        if not onnx_filename_on_hub and kvs.get('checkpoint_fp'):
+            onnx_filename_on_hub = kvs.get('checkpoint_fp').replace('.pth', '.onnx')
+        elif not onnx_filename_on_hub:
+            # Fallback or error if no way to determine ONNX filename
+            raise ValueError("ONNX filename cannot be determined. Provide 'onnx_fp' or 'checkpoint_fp'.")
 
-        # convert to onnx online if not existed
-        if onnx_fp is None or not osp.exists(onnx_fp):
-            print(f'{onnx_fp} does not exist, try to convert the `.pth` version to `.onnx` online')
-            onnx_fp = convert_to_onnx(**kvs)
+        # --- Define your Hugging Face Hub details ---
+        HF_REPO_ID = "Stable-Human/3ddfa_v2" # TODO: REPLACE THIS
+        # ---
 
-        self.session = onnxruntime.InferenceSession(onnx_fp, None)
+        try:
+            downloaded_onnx_fp = hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=onnx_filename_on_hub,
+            )
+            self.session = onnxruntime.InferenceSession(downloaded_onnx_fp, None)
+        except Exception as e:
+            # Original code had a fallback to convert .pth to .onnx.
+            # For simplicity with Hugging Face Hub, it's best to upload pre-converted .onnx files.
+            # If on-the-fly conversion is essential:
+            # 1. Download the .pth file using hf_hub_download.
+            # 2. Call a modified convert_to_onnx (from .utils.onnx) that takes the .pth path,
+            #    converts it, saves to a local cache, and returns the cached .onnx path.
+            # 3. Load the session from the cached .onnx path.
+            # This is more complex and not implemented here.
+            print(f"Error downloading/loading ONNX model {onnx_filename_on_hub} from {HF_REPO_ID}: {e}")
+            print("Please ensure the ONNX model is available on Hugging Face Hub or implement on-the-fly conversion.")
+            raise
 
         # params normalization config
         r = _load(param_mean_std_fp)
