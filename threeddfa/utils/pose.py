@@ -160,7 +160,7 @@ def plot_pose_box(img, P, ver, color=(40, 255, 0), line_width=2):
 
 def viz_pose(img, param_lst, ver_lst, show_flag=False, wfp=None):
     for param, ver in zip(param_lst, ver_lst):
-        P, pose = calc_pose(param)
+        P, pose, _ = calc_pose(param)
         img = plot_pose_box(img, P, ver)
         # print(P[:, :3])
         print(f'yaw: {pose[0]:.1f}, pitch: {pose[1]:.1f}, roll: {pose[2]:.1f}')
