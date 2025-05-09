@@ -10,7 +10,7 @@ __author__ = 'cleardusk'
 
 import cv2
 import numpy as np
-from math import cos, sin, atan2, asin, sqrt
+from math import cos, sin, atan2, asin, sqrt, degrees
 
 from .functions import calc_hypotenuse, plot_image
 
@@ -62,6 +62,41 @@ def matrix2angle(R):
 
     return x, y, z
 
+def calculate_2d_inplane_rotation_from_3d_orientation(R):
+    """
+    Calculates the 2D in-plane rotation angle needed to make the head's
+    natural "up" direction align with the image's vertical axis.
+    Assumes image Y-axis points downwards. Positive angle for CCW rotation.
+
+    Args:
+        R (np.ndarray): The 3x3 rotation matrix representing the head's orientation
+                        in the camera coordinate system.
+
+    Returns:
+        float: The rotation angle in degrees to align head's up with image's vertical.
+    """
+    # Define the canonical "up" vector in the head's local coordinate system
+    # (Y-axis points up from neck to top of head)
+    up_model = np.array([0., 1., 0.])
+
+    # Transform this "up" vector to the camera's coordinate system
+    up_camera = R @ up_model
+
+    # up_camera[0] is the x-component in the image plane (horizontal)
+    # up_camera[1] is the y-component in the image plane (vertical, positive down)
+    # We want the head's "up" to align with the image's negative Y-axis ([0, -1]).
+    # The angle of the projected vector (up_camera[0], up_camera[1])
+    # with respect to the positive Y-axis (downwards) is atan2(up_camera[0], up_camera[1]).
+    # A positive angle means up_camera is tilted towards positive X (right).
+    # We need to rotate by the negative of this angle to align it vertically.
+    angle_rad = atan2(up_camera[0], up_camera[1])
+
+    angle_deg = degrees(angle_rad)
+
+    # Return the negative of the calculated angle, as a positive rotation
+    # with cv2.getRotationMatrix2D is CCW. If head's up is tilted right (positive angle_deg),
+    # we need a CCW rotation (-angle_deg) to bring it vertical.
+    return -angle_deg
 
 def calc_pose(param):
     P = param[:12].reshape(3, -1)  # camera matrix
@@ -70,7 +105,7 @@ def calc_pose(param):
     pose = matrix2angle(R)
     pose = [p * 180 / np.pi for p in pose]
 
-    return P, pose
+    return P, pose, R
 
 
 def build_camera_box(rear_size=90):
