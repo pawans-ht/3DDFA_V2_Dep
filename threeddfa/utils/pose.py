@@ -73,7 +73,7 @@ def calculate_2d_inplane_rotation_from_3d_orientation(R):
                         in the camera coordinate system.
 
     Returns:
-        float: The rotation angle in degrees to align head's up with image's vertical.
+        float: The rotation angle in radians to align head's up with image's vertical.
     """
     # Define the canonical "up" vector in the head's local coordinate system
     # (Y-axis points up from neck to top of head)
@@ -91,19 +91,18 @@ def calculate_2d_inplane_rotation_from_3d_orientation(R):
     # We need to rotate by the negative of this angle to align it vertically.
     angle_rad = atan2(up_camera[0], up_camera[1])
 
-    angle_deg = degrees(angle_rad)
-
-    # Return the negative of the calculated angle, as a positive rotation
-    # with cv2.getRotationMatrix2D is CCW. If head's up is tilted right (positive angle_deg),
-    # we need a CCW rotation (-angle_deg) to bring it vertical.
-    return -angle_deg
+    # Return the negative of the calculated angle in radians.
+    # A positive rotation for cv2.getRotationMatrix2D is CCW.
+    # If head's "up" (when projected) is tilted towards positive X (right),
+    # angle_rad will be positive. We need a CCW rotation (-angle_rad) to make it vertical.
+    return -angle_rad
 
 def calc_pose(param):
     P = param[:12].reshape(3, -1)  # camera matrix
     s, R, t3d = P2sRt(P)
     P = np.concatenate((R, t3d.reshape(3, -1)), axis=1)  # without scale
     pose = matrix2angle(R)
-    pose = [p * 180 / np.pi for p in pose]
+    # pose = [p * 180 / np.pi for p in pose]
 
     return P, pose, R
 
