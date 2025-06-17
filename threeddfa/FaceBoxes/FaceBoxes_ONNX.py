@@ -1,7 +1,7 @@
 # coding: utf-8
 
 import os.path as osp
-from huggingface_hub import hf_hub_download # Added import
+from huggingface_hub import hf_hub_download  # Added import
 
 import torch
 import numpy as np
@@ -32,7 +32,7 @@ make_abs_path = lambda fn: osp.join(osp.dirname(osp.realpath(__file__)), fn)
 # onnx_path = make_abs_path('weights/FaceBoxesProd.onnx') # Original path
 
 
-def viz_bbox(img, dets, wfp='out.jpg'):
+def viz_bbox(img, dets, wfp="out.jpg"):
     # show
     for b in dets:
         if b[4] < vis_thres:
@@ -44,14 +44,14 @@ def viz_bbox(img, dets, wfp='out.jpg'):
         cy = b[1] + 12
         cv2.putText(img, text, (cx, cy), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
     cv2.imwrite(wfp, img)
-    print(f'Viz bbox to {wfp}')
+    print(f"Viz bbox to {wfp}")
 
 
 class FaceBoxes_ONNX(object):
     def __init__(self, timer_flag=False):
         # --- Define your Hugging Face Hub details ---
-        HF_REPO_ID = "Stable-Human/3ddfa_v2" 
-        FACEBOXES_ONNX_FILENAME = "FaceBoxesProd.onnx" 
+        HF_REPO_ID = "Stable-Human/3ddfa_v2"
+        FACEBOXES_ONNX_FILENAME = "FaceBoxesProd.onnx"
         # ---
 
         try:
@@ -70,8 +70,12 @@ class FaceBoxes_ONNX(object):
             #    converts it, saves to a local cache, and returns the cached .onnx path.
             # 4. Load the session from the cached .onnx path.
             # This is more complex and not implemented here.
-            print(f"Error downloading/loading FaceBoxes ONNX model {FACEBOXES_ONNX_FILENAME} from {HF_REPO_ID}: {e}")
-            print("Please ensure the ONNX model is available on Hugging Face Hub or implement on-the-fly conversion.")
+            print(
+                f"Error downloading/loading FaceBoxes ONNX model {FACEBOXES_ONNX_FILENAME} from {HF_REPO_ID}: {e}"
+            )
+            print(
+                "Please ensure the ONNX model is available on Hugging Face Hub or implement on-the-fly conversion."
+            )
             raise
 
         self.timer_flag = timer_flag
@@ -102,28 +106,30 @@ class FaceBoxes_ONNX(object):
             img = np.float32(img_raw)
 
         # forward
-        _t = {'forward_pass': Timer(), 'misc': Timer()}
+        _t = {"forward_pass": Timer(), "misc": Timer()}
         im_height, im_width, _ = img.shape
-        scale_bbox = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
+        scale_bbox = torch.Tensor(
+            [img.shape[1], img.shape[0], img.shape[1], img.shape[0]]
+        )
 
         img -= (104, 117, 123)
         img = img.transpose(2, 0, 1)
         # img = torch.from_numpy(img).unsqueeze(0)
         img = img[np.newaxis, ...]
 
-        _t['forward_pass'].tic()
+        _t["forward_pass"].tic()
         # loc, conf = self.net(img)  # forward pass
-        out = self.session.run(None, {'input': img})
+        out = self.session.run(None, {"input": img})
         loc, conf = out[0], out[1]
         # for compatibility, may need to optimize
         loc = torch.from_numpy(loc)
-        _t['forward_pass'].toc()
-        _t['misc'].tic()
+        _t["forward_pass"].toc()
+        _t["misc"].tic()
 
         priorbox = PriorBox(image_size=(im_height, im_width))
         priors = priorbox.forward()
         prior_data = priors.data
-        boxes = decode(loc.data.squeeze(0), prior_data, cfg['variance'])
+        boxes = decode(loc.data.squeeze(0), prior_data, cfg["variance"])
         if scale_flag:
             boxes = boxes * scale_bbox / scale / resize
         else:
@@ -150,11 +156,14 @@ class FaceBoxes_ONNX(object):
 
         # keep top-K faster NMS
         dets = dets[:keep_top_k, :]
-        _t['misc'].toc()
+        _t["misc"].toc()
 
         if self.timer_flag:
-            print('Detection: {:d}/{:d} forward_pass_time: {:.4f}s misc: {:.4f}s'.format(1, 1, _t[
-                'forward_pass'].average_time, _t['misc'].average_time))
+            print(
+                "Detection: {:d}/{:d} forward_pass_time: {:.4f}s misc: {:.4f}s".format(
+                    1, 1, _t["forward_pass"].average_time, _t["misc"].average_time
+                )
+            )
 
         # filter using vis_thres
         det_bboxes = []
@@ -170,10 +179,10 @@ class FaceBoxes_ONNX(object):
 def main():
     face_boxes = FaceBoxes_ONNX(timer_flag=True)
 
-    fn = 'trump_hillary.jpg'
-    img_fp = f'../../examples/inputs/{fn}'
+    fn = "trump_hillary.jpg"
+    img_fp = f"../../examples/inputs/{fn}"
     img = cv2.imread(img_fp)
-    print(f'input shape: {img.shape}')
+    print(f"input shape: {img.shape}")
     dets = face_boxes(img)  # xmin, ymin, w, h
     # print(dets)
 
@@ -182,10 +191,10 @@ def main():
     for i in range(n):
         dets = face_boxes(img)
 
-    wfn = fn.replace('.jpg', '_det.jpg')
-    wfp = osp.join('../../examples/results', wfn)
+    wfn = fn.replace(".jpg", "_det.jpg")
+    wfp = osp.join("../../examples/results", wfn)
     viz_bbox(img, dets, wfp)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

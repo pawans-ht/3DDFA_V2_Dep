@@ -1,6 +1,6 @@
 # coding: utf-8
 
-__author__ = 'cleardusk'
+__author__ = "cleardusk"
 
 import os.path as osp
 import time
@@ -15,11 +15,16 @@ from . import models
 from .bfm import BFMModel
 from .utils.io import _load
 from .utils.functions import (
-    crop_img, parse_roi_box_from_bbox, parse_roi_box_from_landmark,
+    crop_img,
+    parse_roi_box_from_bbox,
+    parse_roi_box_from_landmark,
 )
 from .utils.tddfa_util import (
-    load_model, _parse_param, similar_transform,
-    ToTensorGjz, NormalizeGjz
+    load_model,
+    _parse_param,
+    similar_transform,
+    ToTensorGjz,
+    NormalizeGjz,
 )
 
 make_abs_path = lambda fn: osp.join(osp.dirname(osp.realpath(__file__)), fn)
@@ -36,40 +41,39 @@ class TDDFA(object):
             # bfm_fp is the filename on Hugging Face Hub, e.g., "bfm_noneck_v3.pkl"
             # BFMModel's __init__ will handle downloading it.
             # The default value "bfm_noneck_v3.pkl" is the filename.
-            bfm_fp_placeholder=kvs.get('bfm_fp', "bfm_noneck_v3.pkl"),
-            shape_dim=kvs.get('shape_dim', 40),
-            exp_dim=kvs.get('exp_dim', 10)
+            bfm_fp_placeholder=kvs.get("bfm_fp", "bfm_noneck_v3.pkl"),
+            shape_dim=kvs.get("shape_dim", 40),
+            exp_dim=kvs.get("exp_dim", 10),
         )
         self.tri = self.bfm.tri
 
         # config
-        self.gpu_mode = kvs.get('gpu_mode', False)
-        self.gpu_id = kvs.get('gpu_id', 0)
-        self.size = kvs.get('size', 120)
+        self.gpu_mode = kvs.get("gpu_mode", False)
+        self.gpu_id = kvs.get("gpu_id", 0)
+        self.size = kvs.get("size", 120)
 
         # param_mean_std_fp is the filename on Hugging Face Hub
         # The default value is constructed to be the filename.
         param_mean_std_fp = kvs.get(
-            'param_mean_std_fp',
-            f'param_mean_std_62d_{self.size}x{self.size}.pkl'
+            "param_mean_std_fp", f"param_mean_std_62d_{self.size}x{self.size}.pkl"
         )
 
         # load model, default output is dimension with length 62 = 12(pose) + 40(shape) +10(expression)
-        model = getattr(models, kvs.get('arch'))(
-            num_classes=kvs.get('num_params', 62),
-            widen_factor=kvs.get('widen_factor', 1),
+        model = getattr(models, kvs.get("arch"))(
+            num_classes=kvs.get("num_params", 62),
+            widen_factor=kvs.get("widen_factor", 1),
             size=self.size,
-            mode=kvs.get('mode', 'small')
+            mode=kvs.get("mode", "small"),
         )
         # model = load_model(model, kvs.get('checkpoint_fp')) # Original line
-        
-        checkpoint_filename_on_hub = kvs.get('checkpoint_fp')
+
+        checkpoint_filename_on_hub = kvs.get("checkpoint_fp")
         # Ensure checkpoint_fp from kvs is just the filename, e.g., "mb1_120x120.pth"
 
         # --- Define your Hugging Face Hub details ---
         # You will need to create this repository on Hugging Face Hub and upload your weights.
         # All weights will be in this single repository.
-        HF_REPO_ID = "Stable-Human/3ddfa_v2" 
+        HF_REPO_ID = "Stable-Human/3ddfa_v2"
         # ---
 
         try:
@@ -81,7 +85,9 @@ class TDDFA(object):
             )
             model = load_model(model, downloaded_checkpoint_fp)
         except Exception as e:
-            print(f"Error downloading/loading model {checkpoint_filename_on_hub} from {HF_REPO_ID}: {e}")
+            print(
+                f"Error downloading/loading model {checkpoint_filename_on_hub} from {HF_REPO_ID}: {e}"
+            )
             raise
 
         if self.gpu_mode:
@@ -102,15 +108,16 @@ class TDDFA(object):
         # param_mean_std_fp was obtained from kvs.get or default value above, now it's a filename
         try:
             downloaded_param_mean_std_fp = hf_hub_download(
-                repo_id=HF_REPO_ID,
-                filename=param_mean_std_fp
+                repo_id=HF_REPO_ID, filename=param_mean_std_fp
             )
             r = _load(downloaded_param_mean_std_fp)
         except Exception as e:
-            print(f"Error downloading param_mean_std file {param_mean_std_fp} from {HF_REPO_ID}: {e}")
+            print(
+                f"Error downloading param_mean_std file {param_mean_std_fp} from {HF_REPO_ID}: {e}"
+            )
             raise
-        self.param_mean = r.get('mean')
-        self.param_std = r.get('std')
+        self.param_mean = r.get("mean")
+        self.param_std = r.get("std")
 
         # print('param_mean and param_srd', self.param_mean, self.param_std)
 
@@ -125,29 +132,31 @@ class TDDFA(object):
         param_lst = []
         roi_box_lst = []
 
-        crop_policy = kvs.get('crop_policy', 'box')
+        crop_policy = kvs.get("crop_policy", "box")
         for obj in objs:
-            if crop_policy == 'box':
+            if crop_policy == "box":
                 # by face box
                 roi_box = parse_roi_box_from_bbox(obj)
-            elif crop_policy == 'landmark':
+            elif crop_policy == "landmark":
                 # by landmarks
                 roi_box = parse_roi_box_from_landmark(obj)
             else:
-                raise ValueError(f'Unknown crop policy {crop_policy}')
+                raise ValueError(f"Unknown crop policy {crop_policy}")
 
             roi_box_lst.append(roi_box)
             img = crop_img(img_ori, roi_box)
-            img = cv2.resize(img, dsize=(self.size, self.size), interpolation=cv2.INTER_LINEAR)
+            img = cv2.resize(
+                img, dsize=(self.size, self.size), interpolation=cv2.INTER_LINEAR
+            )
             inp = self.transform(img).unsqueeze(0)
 
             if self.gpu_mode:
                 inp = inp.cuda(device=self.gpu_id)
 
-            if kvs.get('timer_flag', False):
+            if kvs.get("timer_flag", False):
                 end = time.time()
                 param = self.model(inp)
-                elapse = f'Inference: {(time.time() - end) * 1000:.1f}ms'
+                elapse = f"Inference: {(time.time() - end) * 1000:.1f}ms"
                 print(elapse)
             else:
                 param = self.model(inp)
@@ -160,20 +169,34 @@ class TDDFA(object):
         return param_lst, roi_box_lst
 
     def recon_vers(self, param_lst, roi_box_lst, **kvs):
-        dense_flag = kvs.get('dense_flag', False)
+        dense_flag = kvs.get("dense_flag", False)
         size = self.size
 
         ver_lst = []
         for param, roi_box in zip(param_lst, roi_box_lst):
             if dense_flag:
                 R, offset, alpha_shp, alpha_exp = _parse_param(param)
-                pts3d = R @ (self.bfm.u + self.bfm.w_shp @ alpha_shp + self.bfm.w_exp @ alpha_exp). \
-                    reshape(3, -1, order='F') + offset
+                pts3d = (
+                    R
+                    @ (
+                        self.bfm.u
+                        + self.bfm.w_shp @ alpha_shp
+                        + self.bfm.w_exp @ alpha_exp
+                    ).reshape(3, -1, order="F")
+                    + offset
+                )
                 pts3d = similar_transform(pts3d, roi_box, size)
             else:
                 R, offset, alpha_shp, alpha_exp = _parse_param(param)
-                pts3d = R @ (self.bfm.u_base + self.bfm.w_shp_base @ alpha_shp + self.bfm.w_exp_base @ alpha_exp). \
-                    reshape(3, -1, order='F') + offset
+                pts3d = (
+                    R
+                    @ (
+                        self.bfm.u_base
+                        + self.bfm.w_shp_base @ alpha_shp
+                        + self.bfm.w_exp_base @ alpha_exp
+                    ).reshape(3, -1, order="F")
+                    + offset
+                )
                 pts3d = similar_transform(pts3d, roi_box, size)
 
             ver_lst.append(pts3d)

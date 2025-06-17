@@ -1,7 +1,7 @@
 # coding: utf-8
 
 import os.path as osp
-from huggingface_hub import hf_hub_download # Added import
+from huggingface_hub import hf_hub_download  # Added import
 
 import torch
 import numpy as np
@@ -30,7 +30,7 @@ make_abs_path = lambda fn: osp.join(osp.dirname(osp.realpath(__file__)), fn)
 # pretrained_path = make_abs_path('weights/FaceBoxesProd.pth') # Original path
 
 
-def viz_bbox(img, dets, wfp='out.jpg'):
+def viz_bbox(img, dets, wfp="out.jpg"):
     # show
     for b in dets:
         if b[4] < vis_thres:
@@ -42,19 +42,21 @@ def viz_bbox(img, dets, wfp='out.jpg'):
         cy = b[1] + 12
         cv2.putText(img, text, (cx, cy), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
     cv2.imwrite(wfp, img)
-    print(f'Viz bbox to {wfp}')
+    print(f"Viz bbox to {wfp}")
 
 
 class FaceBoxes:
-    def __init__(self, timer_flag=False, device='cpu'):
+    def __init__(self, timer_flag=False, device="cpu"):
         torch.set_grad_enabled(False)
         self.device = device
 
-        net = FaceBoxesNet(phase='test', size=None, num_classes=2)  # initialize detector
+        net = FaceBoxesNet(
+            phase="test", size=None, num_classes=2
+        )  # initialize detector
         # load_model is called with load_to_cpu=True, so model is on CPU initially
         # --- Define your Hugging Face Hub details ---
-        HF_REPO_ID = "Stable-Human/3ddfa_v2" 
-        FACEBOXES_PTH_FILENAME = "FaceBoxesProd.pth" 
+        HF_REPO_ID = "Stable-Human/3ddfa_v2"
+        FACEBOXES_PTH_FILENAME = "FaceBoxesProd.pth"
         # ---
 
         try:
@@ -62,9 +64,13 @@ class FaceBoxes:
                 repo_id=HF_REPO_ID,
                 filename=FACEBOXES_PTH_FILENAME,
             )
-            self.net = load_model(net, pretrained_path=downloaded_pth_path, load_to_cpu=True)
+            self.net = load_model(
+                net, pretrained_path=downloaded_pth_path, load_to_cpu=True
+            )
         except Exception as e:
-            print(f"Error downloading/loading FaceBoxes .pth model {FACEBOXES_PTH_FILENAME} from {HF_REPO_ID}: {e}")
+            print(
+                f"Error downloading/loading FaceBoxes .pth model {FACEBOXES_PTH_FILENAME} from {HF_REPO_ID}: {e}"
+            )
             raise
         self.net = self.net.to(self.device)  # Move model to specified device
         self.net.eval()
@@ -72,7 +78,9 @@ class FaceBoxes:
 
         self.timer_flag = timer_flag
 
-    def __call__(self, img_, confidence_threshold=0.5):  # Default to original vis_thres value
+    def __call__(
+        self, img_, confidence_threshold=0.5
+    ):  # Default to original vis_thres value
         img_raw = img_.copy()
 
         # scaling to speed up
@@ -98,21 +106,23 @@ class FaceBoxes:
             img = np.float32(img_raw)
 
         # forward
-        _t = {'forward_pass': Timer(), 'misc': Timer()}
+        _t = {"forward_pass": Timer(), "misc": Timer()}
         im_height, im_width, _ = img.shape
-        scale_bbox = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]]).to(self.device)
+        scale_bbox = torch.Tensor(
+            [img.shape[1], img.shape[0], img.shape[1], img.shape[0]]
+        ).to(self.device)
         img -= (104, 117, 123)
         img = img.transpose(2, 0, 1)
         img = torch.from_numpy(img).unsqueeze(0).to(self.device)
 
-        _t['forward_pass'].tic()
+        _t["forward_pass"].tic()
         loc, conf = self.net(img)  # forward pass
-        _t['forward_pass'].toc()
-        _t['misc'].tic()
+        _t["forward_pass"].toc()
+        _t["misc"].tic()
         priorbox = PriorBox(image_size=(im_height, im_width))
         priors = priorbox.forward().to(self.device)
         prior_data = priors.data
-        boxes = decode(loc.data.squeeze(0), prior_data, cfg['variance'])
+        boxes = decode(loc.data.squeeze(0), prior_data, cfg["variance"])
         if scale_flag:
             boxes = boxes * scale_bbox / scale / resize
         else:
@@ -138,11 +148,14 @@ class FaceBoxes:
 
         # keep top-K faster NMS
         dets = dets[:keep_top_k, :]
-        _t['misc'].toc()
+        _t["misc"].toc()
 
         if self.timer_flag:
-            print('Detection: {:d}/{:d} forward_pass_time: {:.4f}s misc: {:.4f}s'.format(1, 1, _t[
-                'forward_pass'].average_time, _t['misc'].average_time))
+            print(
+                "Detection: {:d}/{:d} forward_pass_time: {:.4f}s misc: {:.4f}s".format(
+                    1, 1, _t["forward_pass"].average_time, _t["misc"].average_time
+                )
+            )
 
         # filter using the passed confidence_threshold
         det_bboxes = []
@@ -158,10 +171,10 @@ class FaceBoxes:
 def main():
     face_boxes = FaceBoxes(timer_flag=True)
 
-    fn = 'trump_hillary.jpg'
-    img_fp = f'../../examples/inputs/{fn}'
+    fn = "trump_hillary.jpg"
+    img_fp = f"../../examples/inputs/{fn}"
     img = cv2.imread(img_fp)
-    print(f'input shape: {img.shape}')
+    print(f"input shape: {img.shape}")
     dets = face_boxes(img)  # xmin, ymin, w, h
     # print(dets)
 
@@ -170,10 +183,10 @@ def main():
     for i in range(n):
         dets = face_boxes(img)
 
-    wfn = fn.replace('.jpg', '_det.jpg')
-    wfp = osp.join('../../examples/results', wfn)
+    wfn = fn.replace(".jpg", "_det.jpg")
+    wfp = osp.join("../../examples/results", wfn)
     viz_bbox(img, dets, wfp)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

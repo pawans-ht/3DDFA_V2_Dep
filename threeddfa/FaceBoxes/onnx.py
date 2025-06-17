@@ -1,6 +1,6 @@
 # coding: utf-8
 
-__author__ = 'cleardusk'
+__author__ = "cleardusk"
 
 import torch
 
@@ -9,10 +9,10 @@ from .utils.functions import load_model
 
 
 def convert_to_onnx(onnx_path):
-    pretrained_path = onnx_path.replace('.onnx', '.pth')
+    pretrained_path = onnx_path.replace(".onnx", ".pth")
     # 1. load model
     torch.set_grad_enabled(False)
-    net = FaceBoxesNet(phase='test', size=None, num_classes=2)  # initialize detector
+    net = FaceBoxesNet(phase="test", size=None, num_classes=2)  # initialize detector
     net = load_model(net, pretrained_path=pretrained_path, load_to_cpu=True)
     net.eval()
 
@@ -24,12 +24,9 @@ def convert_to_onnx(onnx_path):
         net,
         (dummy_input,),
         onnx_path,
-        input_names=['input'],
-        output_names=['output'],
-        dynamic_axes={
-            'input': [0, 2, 3],
-            'output': [0]
-        },
-        do_constant_folding=True
+        input_names=["input"],
+        output_names=["output"],
+        dynamic_axes={"input": [0, 2, 3], "output": [0]},
+        do_constant_folding=True,
     )
-    print(f'Convert {pretrained_path} to {onnx_path} done.')
+    print(f"Convert {pretrained_path} to {onnx_path} done.")

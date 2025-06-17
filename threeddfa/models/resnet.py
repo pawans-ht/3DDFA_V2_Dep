@@ -3,13 +3,14 @@
 
 import torch.nn as nn
 
-__all__ = ['ResNet', 'resnet22']
+__all__ = ["ResNet", "resnet22"]
 
 
 def conv3x3(in_planes, out_planes, stride=1):
     "3x3 convolution with padding"
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
+    return nn.Conv2d(
+        in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False
+    )
 
 
 class BasicBlock(nn.Module):
@@ -47,10 +48,20 @@ class BasicBlock(nn.Module):
 class ResNet(nn.Module):
     """Another Strucutre used in caffe-resnet25"""
 
-    def __init__(self, block, layers, num_classes=62, num_landmarks=136, input_channel=3, fc_flg=False):
+    def __init__(
+        self,
+        block,
+        layers,
+        num_classes=62,
+        num_landmarks=136,
+        input_channel=3,
+        fc_flg=False,
+    ):
         self.inplanes = 64
         super(ResNet, self).__init__()
-        self.conv1 = nn.Conv2d(input_channel, 32, kernel_size=5, stride=2, padding=2, bias=False)
+        self.conv1 = nn.Conv2d(
+            input_channel, 32, kernel_size=5, stride=2, padding=2, bias=False
+        )
         self.bn1 = nn.BatchNorm2d(32)  # 32 is input channels number
         self.relu1 = nn.ReLU(inplace=True)
 
@@ -78,7 +89,7 @@ class ResNet(nn.Module):
                 # m.weight.data.normal_(0, math.sqrt(2. / n))
 
                 # 2. kaiming normal
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
@@ -87,8 +98,13 @@ class ResNet(nn.Module):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(
+                    self.inplanes,
+                    planes * block.expansion,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(planes * block.expansion),
             )
 
@@ -135,9 +151,9 @@ def resnet22(**kwargs):
     model = ResNet(
         BasicBlock,
         [3, 4, 3],
-        num_landmarks=kwargs.get('num_landmarks', 136),
-        input_channel=kwargs.get('input_channel', 3),
-        fc_flg=False
+        num_landmarks=kwargs.get("num_landmarks", 136),
+        input_channel=kwargs.get("input_channel", 3),
+        fc_flg=False,
     )
     return model
 
@@ -146,5 +162,5 @@ def main():
     pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

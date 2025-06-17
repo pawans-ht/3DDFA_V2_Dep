@@ -26,15 +26,13 @@ make_abs_path = lambda fn: osp.join(osp.dirname(osp.realpath(__file__)), fn)
 
 class TrianglesMeshRender(object):
     def __init__(
-            self,
-            clibs,
-            light=(0, 0, 5),
-            direction=(0.6, 0.6, 0.6),
-            ambient=(0.3, 0.3, 0.3)
+        self, clibs, light=(0, 0, 5), direction=(0.6, 0.6, 0.6), ambient=(0.3, 0.3, 0.3)
     ):
         if not osp.exists(clibs):
-            raise Exception(f'{clibs} not found, please build it first, by run '
-                            f'"gcc -shared -Wall -O3 render.c -o render.so -fPIC" in utils/asset directory')
+            raise Exception(
+                f"{clibs} not found, please build it first, by run "
+                f'"gcc -shared -Wall -O3 render.c -o render.so -fPIC" in utils/asset directory'
+            )
 
         self._clibs = ctypes.CDLL(clibs)
 
@@ -52,16 +50,20 @@ class TrianglesMeshRender(object):
         self.tri_nums = triangles.shape[0]
 
         self._clibs._render(
-            self.triangles, self.tri_nums,
-            self._light, self._direction, self._ambient,
+            self.triangles,
+            self.tri_nums,
+            self._light,
+            self._direction,
+            self._ambient,
             np.ctypeslib.as_ctypes(vertices),
             vertices.shape[0],
             np.ctypeslib.as_ctypes(bg),
-            bg.shape[0], bg.shape[1]
+            bg.shape[0],
+            bg.shape[1],
         )
 
 
-render_app = TrianglesMeshRender(clibs=make_abs_path('asset/render.so'))
+render_app = TrianglesMeshRender(clibs=make_abs_path("asset/render.so"))
 
 
 def render(img, ver_lst, tri, alpha=0.6, show_flag=False, wfp=None, with_bg_flag=True):
@@ -81,7 +83,7 @@ def render(img, ver_lst, tri, alpha=0.6, show_flag=False, wfp=None, with_bg_flag
 
     if wfp is not None:
         cv2.imwrite(wfp, res)
-        print(f'Save visualization result to {wfp}')
+        print(f"Save visualization result to {wfp}")
 
     if show_flag:
         plot_image(res)

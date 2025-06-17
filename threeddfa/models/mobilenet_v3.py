@@ -4,22 +4,31 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-__all__ = ['MobileNetV3', 'mobilenet_v3']
+__all__ = ["MobileNetV3", "mobilenet_v3"]
 
 
-def conv_bn(inp, oup, stride, conv_layer=nn.Conv2d, norm_layer=nn.BatchNorm2d, nlin_layer=nn.ReLU):
+def conv_bn(
+    inp,
+    oup,
+    stride,
+    conv_layer=nn.Conv2d,
+    norm_layer=nn.BatchNorm2d,
+    nlin_layer=nn.ReLU,
+):
     return nn.Sequential(
         conv_layer(inp, oup, 3, stride, 1, bias=False),
         norm_layer(oup),
-        nlin_layer(inplace=True)
+        nlin_layer(inplace=True),
     )
 
 
-def conv_1x1_bn(inp, oup, conv_layer=nn.Conv2d, norm_layer=nn.BatchNorm2d, nlin_layer=nn.ReLU):
+def conv_1x1_bn(
+    inp, oup, conv_layer=nn.Conv2d, norm_layer=nn.BatchNorm2d, nlin_layer=nn.ReLU
+):
     return nn.Sequential(
         conv_layer(inp, oup, 1, 1, 0, bias=False),
         norm_layer(oup),
-        nlin_layer(inplace=True)
+        nlin_layer(inplace=True),
     )
 
 
@@ -29,7 +38,7 @@ class Hswish(nn.Module):
         self.inplace = inplace
 
     def forward(self, x):
-        return x * F.relu6(x + 3., inplace=self.inplace) / 6.
+        return x * F.relu6(x + 3.0, inplace=self.inplace) / 6.0
 
 
 class Hsigmoid(nn.Module):
@@ -38,7 +47,7 @@ class Hsigmoid(nn.Module):
         self.inplace = inplace
 
     def forward(self, x):
-        return F.relu6(x + 3., inplace=self.inplace) / 6.
+        return F.relu6(x + 3.0, inplace=self.inplace) / 6.0
 
 
 class SEModule(nn.Module):
@@ -49,7 +58,7 @@ class SEModule(nn.Module):
             nn.Linear(channel, channel // reduction, bias=False),
             nn.ReLU(inplace=True),
             nn.Linear(channel // reduction, channel, bias=False),
-            Hsigmoid()
+            Hsigmoid(),
             # nn.Sigmoid()
         )
 
@@ -70,11 +79,12 @@ class Identity(nn.Module):
 
 def make_divisible(x, divisible_by=8):
     import numpy as np
-    return int(np.ceil(x * 1. / divisible_by) * divisible_by)
+
+    return int(np.ceil(x * 1.0 / divisible_by) * divisible_by)
 
 
 class MobileBottleneck(nn.Module):
-    def __init__(self, inp, oup, kernel, stride, exp, se=False, nl='RE'):
+    def __init__(self, inp, oup, kernel, stride, exp, se=False, nl="RE"):
         super(MobileBottleneck, self).__init__()
         assert stride in [1, 2]
         assert kernel in [3, 5]
@@ -83,9 +93,9 @@ class MobileBottleneck(nn.Module):
 
         conv_layer = nn.Conv2d
         norm_layer = nn.BatchNorm2d
-        if nl == 'RE':
+        if nl == "RE":
             nlin_layer = nn.ReLU  # or ReLU6
-        elif nl == 'HS':
+        elif nl == "HS":
             nlin_layer = Hswish
         else:
             raise NotImplementedError
@@ -117,52 +127,63 @@ class MobileBottleneck(nn.Module):
 
 
 class MobileNetV3(nn.Module):
-    def __init__(self, widen_factor=1.0, num_classes=141, num_landmarks=136, input_size=120, mode='small'):
+    def __init__(
+        self,
+        widen_factor=1.0,
+        num_classes=141,
+        num_landmarks=136,
+        input_size=120,
+        mode="small",
+    ):
         super(MobileNetV3, self).__init__()
         input_channel = 16
         last_channel = 1280
-        if mode == 'large':
+        if mode == "large":
             # refer to Table 1 in paper
             mobile_setting = [
                 # k, exp, c,  se,     nl,  s,
-                [3, 16, 16, False, 'RE', 1],
-                [3, 64, 24, False, 'RE', 2],
-                [3, 72, 24, False, 'RE', 1],
-                [5, 72, 40, True, 'RE', 2],
-                [5, 120, 40, True, 'RE', 1],
-                [5, 120, 40, True, 'RE', 1],
-                [3, 240, 80, False, 'HS', 2],
-                [3, 200, 80, False, 'HS', 1],
-                [3, 184, 80, False, 'HS', 1],
-                [3, 184, 80, False, 'HS', 1],
-                [3, 480, 112, True, 'HS', 1],
-                [3, 672, 112, True, 'HS', 1],
-                [5, 672, 160, True, 'HS', 2],
-                [5, 960, 160, True, 'HS', 1],
-                [5, 960, 160, True, 'HS', 1],
+                [3, 16, 16, False, "RE", 1],
+                [3, 64, 24, False, "RE", 2],
+                [3, 72, 24, False, "RE", 1],
+                [5, 72, 40, True, "RE", 2],
+                [5, 120, 40, True, "RE", 1],
+                [5, 120, 40, True, "RE", 1],
+                [3, 240, 80, False, "HS", 2],
+                [3, 200, 80, False, "HS", 1],
+                [3, 184, 80, False, "HS", 1],
+                [3, 184, 80, False, "HS", 1],
+                [3, 480, 112, True, "HS", 1],
+                [3, 672, 112, True, "HS", 1],
+                [5, 672, 160, True, "HS", 2],
+                [5, 960, 160, True, "HS", 1],
+                [5, 960, 160, True, "HS", 1],
             ]
-        elif mode == 'small':
+        elif mode == "small":
             # refer to Table 2 in paper
             mobile_setting = [
                 # k, exp, c,  se,     nl,  s,
-                [3, 16, 16, True, 'RE', 2],
-                [3, 72, 24, False, 'RE', 2],
-                [3, 88, 24, False, 'RE', 1],
-                [5, 96, 40, True, 'HS', 2],
-                [5, 240, 40, True, 'HS', 1],
-                [5, 240, 40, True, 'HS', 1],
-                [5, 120, 48, True, 'HS', 1],
-                [5, 144, 48, True, 'HS', 1],
-                [5, 288, 96, True, 'HS', 2],
-                [5, 576, 96, True, 'HS', 1],
-                [5, 576, 96, True, 'HS', 1],
+                [3, 16, 16, True, "RE", 2],
+                [3, 72, 24, False, "RE", 2],
+                [3, 88, 24, False, "RE", 1],
+                [5, 96, 40, True, "HS", 2],
+                [5, 240, 40, True, "HS", 1],
+                [5, 240, 40, True, "HS", 1],
+                [5, 120, 48, True, "HS", 1],
+                [5, 144, 48, True, "HS", 1],
+                [5, 288, 96, True, "HS", 2],
+                [5, 576, 96, True, "HS", 1],
+                [5, 576, 96, True, "HS", 1],
             ]
         else:
             raise NotImplementedError
 
         # building first layer
         assert input_size % 32 == 0
-        last_channel = make_divisible(last_channel * widen_factor) if widen_factor > 1.0 else last_channel
+        last_channel = (
+            make_divisible(last_channel * widen_factor)
+            if widen_factor > 1.0
+            else last_channel
+        )
         self.features = [conv_bn(3, input_channel, 2, nlin_layer=Hswish)]
         # self.classifier = []
 
@@ -170,19 +191,27 @@ class MobileNetV3(nn.Module):
         for k, exp, c, se, nl, s in mobile_setting:
             output_channel = make_divisible(c * widen_factor)
             exp_channel = make_divisible(exp * widen_factor)
-            self.features.append(MobileBottleneck(input_channel, output_channel, k, s, exp_channel, se, nl))
+            self.features.append(
+                MobileBottleneck(
+                    input_channel, output_channel, k, s, exp_channel, se, nl
+                )
+            )
             input_channel = output_channel
 
         # building last several layers
-        if mode == 'large':
+        if mode == "large":
             last_conv = make_divisible(960 * widen_factor)
-            self.features.append(conv_1x1_bn(input_channel, last_conv, nlin_layer=Hswish))
+            self.features.append(
+                conv_1x1_bn(input_channel, last_conv, nlin_layer=Hswish)
+            )
             self.features.append(nn.AdaptiveAvgPool2d(1))
             self.features.append(nn.Conv2d(last_conv, last_channel, 1, 1, 0))
             self.features.append(Hswish(inplace=True))
-        elif mode == 'small':
+        elif mode == "small":
             last_conv = make_divisible(576 * widen_factor)
-            self.features.append(conv_1x1_bn(input_channel, last_conv, nlin_layer=Hswish))
+            self.features.append(
+                conv_1x1_bn(input_channel, last_conv, nlin_layer=Hswish)
+            )
             # self.features.append(SEModule(last_conv))  # refer to paper Table2, but I think this is a mistake
             self.features.append(nn.AdaptiveAvgPool2d(1))
             self.features.append(nn.Conv2d(last_conv, last_channel, 1, 1, 0))
@@ -222,7 +251,7 @@ class MobileNetV3(nn.Module):
         # weight initialization
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out")
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
             elif isinstance(m, nn.BatchNorm2d):
@@ -236,11 +265,11 @@ class MobileNetV3(nn.Module):
 
 def mobilenet_v3(**kwargs):
     model = MobileNetV3(
-        widen_factor=kwargs.get('widen_factor', 1.0),
-        num_classes=kwargs.get('num_classes', 62),
-        num_landmarks=kwargs.get('num_landmarks', 136),
-        input_size=kwargs.get('size', 128),
-        mode=kwargs.get('mode', 'small')
+        widen_factor=kwargs.get("widen_factor", 1.0),
+        num_classes=kwargs.get("num_classes", 62),
+        num_landmarks=kwargs.get("num_landmarks", 136),
+        input_size=kwargs.get("size", 128),
+        mode=kwargs.get("mode", "small"),
     )
 
     return model

@@ -1,10 +1,10 @@
 # coding: utf-8
 
-__author__ = 'cleardusk'
+__author__ = "cleardusk"
 
 import sys
 
-sys.path.append('..')
+sys.path.append("..")
 
 import cv2
 import numpy as np
@@ -21,7 +21,7 @@ make_abs_path = lambda fn: osp.join(osp.dirname(osp.realpath(__file__)), fn)
 
 def load_uv_coords(fp):
     C = sio.loadmat(fp)
-    uv_coords = C['UV'].copy(order='C').astype(np.float32)
+    uv_coords = C["UV"].copy(order="C").astype(np.float32)
     return uv_coords
 
 
@@ -29,12 +29,14 @@ def process_uv(uv_coords, uv_h=256, uv_w=256):
     uv_coords[:, 0] = uv_coords[:, 0] * (uv_w - 1)
     uv_coords[:, 1] = uv_coords[:, 1] * (uv_h - 1)
     uv_coords[:, 1] = uv_h - uv_coords[:, 1] - 1
-    uv_coords = np.hstack((uv_coords, np.zeros((uv_coords.shape[0], 1), dtype=np.float32)))  # add z
+    uv_coords = np.hstack(
+        (uv_coords, np.zeros((uv_coords.shape[0], 1), dtype=np.float32))
+    )  # add z
     return uv_coords
 
 
-g_uv_coords = load_uv_coords(make_abs_path('../configs/BFM_UV.mat'))
-indices = _load(make_abs_path('../configs/indices.npy'))  # todo: handle bfm_slim
+g_uv_coords = load_uv_coords(make_abs_path("../configs/BFM_UV.mat"))
+indices = _load(make_abs_path("../configs/indices.npy"))  # todo: handle bfm_slim
 g_uv_coords = g_uv_coords[indices, :]
 
 
@@ -73,7 +75,12 @@ def bilinear_interpolate(img, x, y):
     wc = (x - x0) * (y1 - y)
     wd = (x - x0) * (y - y0)
 
-    return wa[..., np.newaxis] * i_a + wb[..., np.newaxis] * i_b + wc[..., np.newaxis] * i_c + wd[..., np.newaxis] * i_d
+    return (
+        wa[..., np.newaxis] * i_a
+        + wb[..., np.newaxis] * i_b
+        + wc[..., np.newaxis] * i_c
+        + wd[..., np.newaxis] * i_d
+    )
 
 
 def uv_tex(img, ver_lst, tri, uv_h=256, uv_w=256, uv_c=3, show_flag=False, wfp=None):
@@ -82,7 +89,7 @@ def uv_tex(img, ver_lst, tri, uv_h=256, uv_w=256, uv_c=3, show_flag=False, wfp=N
     res_lst = []
     for ver_ in ver_lst:
         ver = _to_ctype(ver_.T)  # transpose to m x 3
-        colors = bilinear_interpolate(img, ver[:, 0], ver[:, 1]) / 255.
+        colors = bilinear_interpolate(img, ver[:, 0], ver[:, 1]) / 255.0
         # `rasterize` here serves as texture sampling, may need to optimization
         res = rasterize(uv_coords, tri, colors, height=uv_h, width=uv_w, channel=uv_c)
         res_lst.append(res)
@@ -92,7 +99,7 @@ def uv_tex(img, ver_lst, tri, uv_h=256, uv_w=256, uv_c=3, show_flag=False, wfp=N
 
     if wfp is not None:
         cv2.imwrite(wfp, res)
-        print(f'Save visualization result to {wfp}')
+        print(f"Save visualization result to {wfp}")
 
     if show_flag:
         plot_image(res)

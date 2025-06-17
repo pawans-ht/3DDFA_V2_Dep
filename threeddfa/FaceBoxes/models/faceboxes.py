@@ -6,7 +6,6 @@ import torch.nn.functional as F
 
 
 class BasicConv2d(nn.Module):
-
     def __init__(self, in_channels, out_channels, **kwargs):
         super(BasicConv2d, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, bias=False, **kwargs)
@@ -47,7 +46,6 @@ class Inception(nn.Module):
 
 
 class CRelu(nn.Module):
-
     def __init__(self, in_channels, out_channels, **kwargs):
         super(CRelu, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, bias=False, **kwargs)
@@ -62,7 +60,6 @@ class CRelu(nn.Module):
 
 
 class FaceBoxesNet(nn.Module):
-
     def __init__(self, phase, size, num_classes):
         super(FaceBoxesNet, self).__init__()
         self.phase = phase
@@ -84,10 +81,10 @@ class FaceBoxesNet(nn.Module):
 
         self.loc, self.conf = self.multibox(self.num_classes)
 
-        if self.phase == 'test':
+        if self.phase == "test":
             self.softmax = nn.Softmax(dim=-1)
 
-        if self.phase == 'train':
+        if self.phase == "train":
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
                     if m.bias is not None:
@@ -111,7 +108,6 @@ class FaceBoxesNet(nn.Module):
         return nn.Sequential(*loc_layers), nn.Sequential(*conf_layers)
 
     def forward(self, x):
-
         detection_sources = list()
         loc = list()
         conf = list()
@@ -133,7 +129,7 @@ class FaceBoxesNet(nn.Module):
         x = self.conv4_2(x)
         detection_sources.append(x)
 
-        for (x, l, c) in zip(detection_sources, self.loc, self.conf):
+        for x, l, c in zip(detection_sources, self.loc, self.conf):
             loc.append(l(x).permute(0, 2, 3, 1).contiguous())
             conf.append(c(x).permute(0, 2, 3, 1).contiguous())
 
@@ -141,10 +137,14 @@ class FaceBoxesNet(nn.Module):
         conf = torch.cat([o.view(o.size(0), -1) for o in conf], 1)
 
         if self.phase == "test":
-            output = (loc.view(loc.size(0), -1, 4),
-                      self.softmax(conf.view(conf.size(0), -1, self.num_classes)))
+            output = (
+                loc.view(loc.size(0), -1, 4),
+                self.softmax(conf.view(conf.size(0), -1, self.num_classes)),
+            )
         else:
-            output = (loc.view(loc.size(0), -1, 4),
-                      conf.view(conf.size(0), -1, self.num_classes))
+            output = (
+                loc.view(loc.size(0), -1, 4),
+                conf.view(conf.size(0), -1, self.num_classes),
+            )
 
         return output
