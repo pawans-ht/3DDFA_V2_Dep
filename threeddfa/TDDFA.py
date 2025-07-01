@@ -35,17 +35,28 @@ class TDDFA(object):
 
     def __init__(self, **kvs):
         torch.set_grad_enabled(False)
+    
+        HF_REPO_ID = "Stable-Human/3ddfa_v2"
 
-        # load BFM
-        self.bfm = BFMModel(
-            # bfm_fp is the filename on Hugging Face Hub, e.g., "bfm_noneck_v3.pkl"
-            # BFMModel's __init__ will handle downloading it.
-            # The default value "bfm_noneck_v3.pkl" is the filename.
-            bfm_fp_placeholder=kvs.get("bfm_fp", "bfm_noneck_v3.pkl"),
-            shape_dim=kvs.get("shape_dim", 40),
-            exp_dim=kvs.get("exp_dim", 10),
-        )
-        self.tri = self.bfm.tri
+        # Download BFM model from Hugging Face Hub
+        try:
+            downloaded_bfm_fp = hf_hub_download(
+                repo_id=HF_REPO_ID, filename="bfm_noneck_v3.pkl"
+            )
+            # load BFM
+            self.bfm = BFMModel(
+                # bfm_fp is the filename on Hugging Face Hub, e.g., "bfm_noneck_v3.pkl"
+                # BFMModel's __init__ will handle downloading it.
+                # The default value "bfm_noneck_v3.pkl" is the filename.
+                bfm_fp_placeholder=kvs.get("bfm_fp", downloaded_bfm_fp),
+                shape_dim=kvs.get("shape_dim", 40),
+                exp_dim=kvs.get("exp_dim", 10),
+            )
+            self.tri = self.bfm.tri
+        except Exception as e:
+            print(f"Error downloading BFM model from {HF_REPO_ID}: {e}")
+            raise
+
 
         # config
         self.gpu_mode = kvs.get("gpu_mode", False)
@@ -70,11 +81,6 @@ class TDDFA(object):
         checkpoint_filename_on_hub = kvs.get("checkpoint_fp")
         # Ensure checkpoint_fp from kvs is just the filename, e.g., "mb1_120x120.pth"
 
-        # --- Define your Hugging Face Hub details ---
-        # You will need to create this repository on Hugging Face Hub and upload your weights.
-        # All weights will be in this single repository.
-        HF_REPO_ID = "Stable-Human/3ddfa_v2"
-        # ---
 
         try:
             downloaded_checkpoint_fp = hf_hub_download(
